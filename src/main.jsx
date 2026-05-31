@@ -28,10 +28,24 @@ const cases = [
 ];
 
 const advantages = [
-  ["参数清楚", "围绕材质、规格、压力、连接方式组织产品资料。"],
-  ["资料完整", "PDF 样本、CAD 图纸、安装说明统一入口，后续可接 R2 文件库。"],
-  ["快速询价", "选型后直接加入询价单，减少来回沟通成本。"],
+  ["工程参数清楚", "围绕材质、规格、压力、连接方式组织产品资料，减少选型沟通成本。"],
+  ["图纸资料集中", "PDF 样本、CAD 图纸、安装说明统一入口，适合工程采购和设计配套。"],
+  ["轻量快速询价", "产品加入询价篮后补充数量、工况、交期即可形成询价线索。"],
   ["Cloudflare 架构", "Pages、Functions、R2、D1 与 GitHub 自动部署，轻量可靠。"]
+];
+
+const projectCases = [
+  ["市政二次供水泵房", "不锈钢管 + 法兰 + 阀门配件", "按 PN16 管路统一资料交付，方便设备集成与后期维护。"],
+  ["商业综合体给水改造", "环压管件 + 304 薄壁不锈钢管", "减少现场焊接与停水时间，提高施工效率。"],
+  ["厂区循环水支路", "沟槽管件 + 分水器", "支路清晰、拆装方便，适合后续扩容。"],
+  ["净水设备成套配管", "分水器 + 环压管件", "小空间多支路安装，适配设备模块化交付。"]
+];
+
+const downloadZones = [
+  ["产品资料", "按产品查看核心参数、规格范围和连接方式。", "/downloads/"],
+  ["CAD 图纸", "用于项目选型、设备配套和施工图沟通。", "/downloads/"],
+  ["PDF 样本", "集中下载产品样本和技术资料。", "/downloads/"],
+  ["安装说明", "确认介质、压力、连接方式和现场安装空间。", "/downloads/"]
 ];
 
 function getQuote() {
@@ -137,21 +151,51 @@ function Header({ active, navigate, quoteCount }) {
 }
 
 function Home({ addQuote, navigate }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const heroProduct = products[6] || products[0];
+
+  function submitSearch(event) {
+    event.preventDefault();
+    const query = searchTerm.trim();
+    navigate(query ? `/products/?q=${encodeURIComponent(query)}` : "/products/");
+  }
+
   return (
     <>
       <section className="home-hero">
         <div className="hero-copy">
           <p className="eyebrow">Stainless Piping Components</p>
-          <h1>轻量版工业 B2B 官网，服务水务系统与不锈钢管路选型</h1>
-          <p>覆盖沟槽管件、环压管件、分水器、不锈钢管、法兰与阀门配件，提供产品参数、资料下载、技术内容和快速询价入口。</p>
+          <h1>不锈钢管件、沟槽管件与水务系统配套选型</h1>
+          <p>5 秒内完成路径判断：搜索产品，查看参数，下载 CAD/PDF，加入询价单。</p>
+          <form className="home-search" onSubmit={submitSearch}>
+            <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="搜索型号、分类、材质，如 DN50、法兰、SUS304" />
+            <button className="button" type="submit">搜索产品</button>
+          </form>
+          <div className="quick-paths">
+            <span>选型路径</span>
+            <button type="button" onClick={() => navigate("/products/?category=沟槽管件")}>沟槽连接</button>
+            <button type="button" onClick={() => navigate("/products/?category=环压管件")}>环压快装</button>
+            <button type="button" onClick={() => navigate("/downloads/")}>下载图纸</button>
+            <button type="button" onClick={() => navigate("/quote/")}>提交询价</button>
+          </div>
           <div className="hero-actions">
             <Link className="button large" href="/products/" navigate={navigate}>进入产品中心</Link>
             <Link className="button ghost large" href="/quote/" navigate={navigate}>提交询价</Link>
           </div>
           <div className="hero-metrics"><span><strong>{products.length}</strong> 款产品</span><span><strong>{categories.length}</strong> 大分类</span><span><strong>R2</strong> 文件资料</span></div>
         </div>
-        <div className="hero-product-board">
-          {products.slice(0, 4).map((product) => <ProductMini key={product.slug} product={product} navigate={navigate} />)}
+        <div className="hero-visual">
+          <div className="hero-visual-main">
+            <img src={heroProduct.image} alt={heroProduct.name} />
+            <div>
+              <span>{heroProduct.category} · {heroProduct.id}</span>
+              <strong>{heroProduct.name}</strong>
+              <p>{heroProduct.material} · {heroProduct.size} · {heroProduct.pressure}</p>
+            </div>
+          </div>
+          <div className="hero-product-board compact-board">
+            {products.slice(0, 3).map((product) => <ProductMini key={product.slug} product={product} navigate={navigate} />)}
+          </div>
         </div>
       </section>
       <SectionHead eyebrow="Product Range" title="产品分类" action={<Link className="text-button" href="/products/" navigate={navigate}>查看全部</Link>} />
@@ -165,18 +209,30 @@ function Home({ addQuote, navigate }) {
       <section className="home-section hot-product-grid">
         {products.slice(2, 8).map((product) => <HotProduct key={product.slug} product={product} addQuote={addQuote} navigate={navigate} />)}
       </section>
+      <SectionHead eyebrow="Why Franta" title="为什么选择 Franta" />
+      <section className="home-section why-franta-grid">
+        {advantages.map(([title, text]) => <article key={title}><span>0{advantages.findIndex(([item]) => item === title) + 1}</span><strong>{title}</strong><p>{text}</p></article>)}
+      </section>
       <SectionHead eyebrow="Solutions" title="应用行业" />
       <section className="home-section solution-grid">
         {solutions.map(([title, text, category]) => <Link key={title} className="solution-card" href={`/products/?category=${encodeURIComponent(category)}`} navigate={navigate}><span>{category}</span><h3>{title}</h3><p>{text}</p></Link>)}
+      </section>
+      <SectionHead eyebrow="Water Projects" title="水务项目案例" />
+      <section className="home-section project-case-grid">
+        {projectCases.map(([title, productText, result]) => <article className="project-case-card" key={title}><h3>{title}</h3><strong>{productText}</strong><p>{result}</p></article>)}
+      </section>
+      <SectionHead eyebrow="Downloads" title="资料下载专区" action={<Link className="text-button" href="/downloads/" navigate={navigate}>进入下载中心</Link>} />
+      <section className="home-section download-zone-grid">
+        {downloadZones.map(([title, text, href]) => <Link className="download-zone-card" href={href} navigate={navigate} key={title}><strong>{title}</strong><p>{text}</p><span>查看资料</span></Link>)}
+      </section>
+      <section className="home-section ai-selector">
+        <div><p className="eyebrow">AI Selection</p><h2>AI 选型入口预留</h2><p>后续可输入介质、压力、管径、连接方式和应用场景，自动推荐产品组合与资料包。</p></div>
+        <button className="button ghost" type="button" disabled>即将开放</button>
       </section>
       <section className="home-section split-home-section">
         <div className="section-heading"><p className="eyebrow">Technical Blog</p><h2>新闻 / 技术博客</h2><p>围绕选型、施工、资料交付和水务系统应用持续沉淀技术内容。</p></div>
         <div className="article-list">{blogPosts.map(([title, text]) => <article key={title}><span>选型指南</span><h3>{title}</h3><p>{text}</p></article>)}</div>
       </section>
-      <SectionHead eyebrow="Cases" title="客户案例" />
-      <section className="home-section case-grid">{cases.map(([title, productText, result]) => <article className="case-card" key={title}><h3>{title}</h3><strong>{productText}</strong><p>{result}</p></article>)}</section>
-      <SectionHead eyebrow="Advantages" title="企业优势" />
-      <section className="home-section advantage-grid">{advantages.map(([title, text]) => <article key={title}><strong>{title}</strong><p>{text}</p></article>)}</section>
       <section className="home-section contact-cta"><div><p className="eyebrow">Inquiry</p><h2>准备开始项目询价？</h2><p>选择产品加入询价单，补充工况、数量和交期，我们可以继续接入 Pages Functions + D1 保存线索。</p></div><Link className="button large" href="/quote/" navigate={navigate}>进入询价单</Link></section>
     </>
   );
@@ -199,7 +255,7 @@ function Products({ addQuote, removeQuote, selectedProducts, navigate }) {
   const [category, setCategory] = useState(search.get("category") || "");
   const [material, setMaterial] = useState("");
   const [pressure, setPressure] = useState("");
-  const [keyword, setKeyword] = useState("");
+  const [keyword, setKeyword] = useState(search.get("q") || "");
   const [view, setView] = useState("card");
   const filtered = useMemo(() => products.filter((product) =>
     (!category || product.category === category) &&
@@ -222,12 +278,35 @@ function Products({ addQuote, removeQuote, selectedProducts, navigate }) {
           <button className="button ghost full" onClick={() => { setCategory(""); setMaterial(""); setPressure(""); setKeyword(""); }}>重置筛选</button>
         </aside>
         <div className="catalog-main">
-          <div className="toolbar"><strong>{filtered.length} 个产品</strong><div className="segmented"><button className={view === "card" ? "active" : ""} onClick={() => setView("card")}>卡片</button><button className={view === "list" ? "active" : ""} onClick={() => setView("list")}>列表</button></div></div>
-          <div className={view === "card" ? "product-grid" : "product-grid list-view"}>{filtered.map((product) => <ProductCard key={product.slug} product={product} addQuote={addQuote} navigate={navigate} />)}</div>
+          <div className="toolbar"><strong>{filtered.length} 个产品</strong><div className="segmented"><button className={view === "card" ? "active" : ""} onClick={() => setView("card")}>卡片</button><button className={view === "list" ? "active" : ""} onClick={() => setView("list")}>列表</button><button className={view === "table" ? "active" : ""} onClick={() => setView("table")}>表格</button></div></div>
+          {view === "table" ? <ProductTable products={filtered} addQuote={addQuote} navigate={navigate} /> : <div className={view === "card" ? "product-grid" : "product-grid list-view"}>{filtered.map((product) => <ProductCard key={product.slug} product={product} addQuote={addQuote} navigate={navigate} />)}</div>}
         </div>
         <QuoteRail selectedProducts={selectedProducts} removeQuote={removeQuote} navigate={navigate} />
       </section>
     </>
+  );
+}
+
+function ProductTable({ products: rows, addQuote, navigate }) {
+  return (
+    <div className="product-table-wrap">
+      <table className="product-table">
+        <thead><tr><th>产品</th><th>分类</th><th>材质</th><th>规格</th><th>压力</th><th>连接</th><th>操作</th></tr></thead>
+        <tbody>
+          {rows.map((product) => (
+            <tr key={product.slug}>
+              <td><Link href={`/products/${product.slug}/`} navigate={navigate}>{product.name}</Link><small>{product.id}</small></td>
+              <td>{product.category}</td>
+              <td>{product.material}</td>
+              <td>{product.size}</td>
+              <td>{product.pressure}</td>
+              <td>{product.connection}</td>
+              <td><button className="button small" onClick={() => addQuote(product.slug)}>询价</button></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
