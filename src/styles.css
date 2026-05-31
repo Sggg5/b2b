@@ -102,6 +102,18 @@ img {
   background: #e8f2f0;
 }
 
+.nav-count {
+  display: inline-grid;
+  min-width: 20px;
+  height: 20px;
+  place-items: center;
+  margin-left: 6px;
+  color: #fff;
+  background: var(--signal);
+  border-radius: 999px;
+  font-size: 12px;
+}
+
 .hero,
 .page-head,
 .section,
@@ -397,6 +409,27 @@ img {
   font-size: 18px;
 }
 
+.contact-cta {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 34px;
+  padding: 24px;
+  background: #17222b;
+  color: #fff;
+  border-radius: 8px;
+}
+
+.contact-cta h2 {
+  margin: 0 0 6px;
+}
+
+.contact-cta p {
+  margin: 0;
+  color: #c3ccd4;
+}
+
 .hero-actions,
 .detail-actions,
 .card-actions {
@@ -605,6 +638,32 @@ textarea {
   border-radius: 6px;
 }
 
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.segmented button {
+  min-height: 32px;
+  padding: 5px 12px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+.segmented button.active {
+  color: var(--header);
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(22, 32, 42, 0.12);
+}
+
 .quote-link span {
   display: inline-grid;
   min-width: 24px;
@@ -620,6 +679,14 @@ textarea {
 .product-grid {
   display: grid;
   gap: 10px;
+}
+
+.product-grid.list-view .product-card {
+  grid-template-columns: 120px minmax(0, 1fr);
+}
+
+.product-grid.list-view .product-image {
+  min-height: 108px;
 }
 
 .product-card {
@@ -893,6 +960,44 @@ dd {
   overflow: hidden;
 }
 
+.download-center {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  width: min(1360px, calc(100% - 36px));
+  margin: 0 auto 48px;
+}
+
+.download-column {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.download-column h2 {
+  margin: 0 0 6px;
+  color: var(--header);
+  font-size: 20px;
+}
+
+.download-column article {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.download-column span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
 th,
 td {
   padding: 14px;
@@ -987,8 +1092,14 @@ td small {
   .hot-product-grid,
   .solution-grid,
   .case-grid,
-  .advantage-grid {
+  .advantage-grid,
+  .download-center {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .contact-cta {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .filters,
@@ -1031,7 +1142,8 @@ td small {
   .hot-product-grid,
   .solution-grid,
   .case-grid,
-  .advantage-grid {
+  .advantage-grid,
+  .download-center {
     grid-template-columns: 1fr;
   }
 
