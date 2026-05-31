@@ -51,6 +51,48 @@ const downloadCards = [
   ["检测报告", "PDF", "DOC"]
 ];
 
+const heroSlides = [
+  {
+    title: "专业不锈钢管及管件制造商，支持一键定制",
+    subtitle: "5秒内完成粗略选型：提供产品、查看参数、加入询价单，快速响应工程需求。",
+    image: products.find((item) => item.slug === "grooved-tee")?.image || products[0]?.image,
+    primaryButton: { text: "进入产品中心", href: "/products/" },
+    secondaryButton: { text: "提交询价", href: "/quote/" },
+    features: [
+      ["304/316L", "优质材质"],
+      ["全规格覆盖", "DN15-DN300"],
+      ["快速选型", "精准匹配"],
+      ["资料下载", "CAD / PDF"]
+    ]
+  },
+  {
+    title: "沟槽管件、双卡压管件与水务系统配套选型",
+    subtitle: "覆盖沟槽、环压、不锈钢水管、保温管与覆塑管，适配水务、消防和工业管路项目。",
+    image: products.find((item) => item.slug === "grooved-reducing-coupling")?.image || products[1]?.image,
+    primaryButton: { text: "查看沟槽管件", href: "/products/?category=%E6%B2%9F%E6%A7%BD%E7%AE%A1%E4%BB%B6" },
+    secondaryButton: { text: "AI 快速选型", href: "#ai-selector" },
+    features: [
+      ["沟槽系统", "快速安装"],
+      ["双卡压", "稳定密封"],
+      ["单卡压", "轻量快装"],
+      ["水务项目", "工程适配"]
+    ]
+  },
+  {
+    title: "CAD 图纸、PDF 样本与询价流程一站完成",
+    subtitle: "产品资料、参数表、下载中心与询价篮联动，帮助工程采购快速完成方案比对。",
+    image: products.find((item) => item.slug === "double-press-tee")?.image || products[2]?.image,
+    primaryButton: { text: "进入下载中心", href: "/downloads/" },
+    secondaryButton: { text: "加入询价单", href: "/quote/" },
+    features: [
+      ["PDF 样本", "在线下载"],
+      ["CAD 图纸", "工程对接"],
+      ["参数筛选", "快速定位"],
+      ["询价篮", "批量提交"]
+    ]
+  }
+];
+
 const fallbackBlogPosts = [
   {
     slug: "grooved-vs-press-selection",
@@ -340,6 +382,17 @@ function Link({ href, navigate, children, className }) {
     return <a className={className} href={href}>{children}</a>;
   }
 
+  if (href.startsWith("#")) {
+    return (
+      <a className={className} href={href} onClick={(event) => {
+        event.preventDefault();
+        document.querySelector(href)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }}>
+        {children}
+      </a>
+    );
+  }
+
   return (
     <a className={className} href={href} onClick={(event) => { event.preventDefault(); navigate(href); }}>
       {children}
@@ -384,8 +437,20 @@ function Home({ navigate }) {
   const [aiQuery, setAiQuery] = useState("");
   const [aiResult, setAiResult] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
-  const heroProduct = products.find((item) => item.slug === "grooved-tee") || products[0];
+  const [heroIndex, setHeroIndex] = useState(0);
+  const [isHeroPaused, setIsHeroPaused] = useState(false);
+  const activeHero = heroSlides[heroIndex];
   const latestPosts = siteBlogPosts.slice(0, 3);
+
+  React.useEffect(() => {
+    if (isHeroPaused) return undefined;
+
+    const timer = window.setInterval(() => {
+      setHeroIndex((index) => (index + 1) % heroSlides.length);
+    }, 4000);
+
+    return () => window.clearInterval(timer);
+  }, [isHeroPaused]);
 
   async function submitAi(event) {
     event.preventDefault();
@@ -399,30 +464,38 @@ function Home({ navigate }) {
 
   return (
     <div className="pro-home">
-      <section className="pro-hero">
-        <div className="pro-hero-copy">
+      <section className="pro-hero" onMouseEnter={() => setIsHeroPaused(true)} onMouseLeave={() => setIsHeroPaused(false)}>
+        <div className="pro-hero-copy hero-slide-copy" key={`copy-${heroIndex}`}>
           <p className="eyebrow">STAINLESS PIPING COMPONENTS</p>
-          <h1>专业不锈钢管及管件制造商，支持一键定制</h1>
-          <p>5秒内完成粗略选型：提供产品、查看参数、加入询价单，快速响应工程需求。</p>
+          <h1>{activeHero.title}</h1>
+          <p>{activeHero.subtitle}</p>
           <div className="pro-hero-actions">
-            <Link className="button large" href="/products/" navigate={navigate}>进入产品中心</Link>
-            <Link className="button ghost large" href="/quote/" navigate={navigate}>提交询价</Link>
+            <Link className="button large" href={activeHero.primaryButton.href} navigate={navigate}>{activeHero.primaryButton.text}</Link>
+            <Link className="button ghost large" href={activeHero.secondaryButton.href} navigate={navigate}>{activeHero.secondaryButton.text}</Link>
           </div>
           <div className="pro-features">
-            <Feature title="304/316L" text="优质材质" />
-            <Feature title="全规格覆盖" text="DN15-DN300" />
-            <Feature title="快速选型" text="精准匹配" />
-            <Feature title="资料下载" text="CAD / PDF" />
+            {activeHero.features.map(([title, text]) => <Feature key={title} title={title} text={text} />)}
           </div>
         </div>
-        <div className="pro-hero-media">
+        <div className="pro-hero-media hero-slide-media" key={`media-${heroIndex}`}>
           <span className="hero-shape" />
-          <ProductImage product={heroProduct} />
+          <img src={activeHero.image} alt={activeHero.title} loading="eager" />
         </div>
       </section>
-      <div className="slider-dots"><span /><span /><span /></div>
+      <div className="slider-dots" aria-label="首页轮播切换">
+        {heroSlides.map((slide, index) => (
+          <button
+            key={slide.title}
+            className={index === heroIndex ? "active" : ""}
+            type="button"
+            aria-label={`切换到轮播图 ${index + 1}`}
+            aria-current={index === heroIndex ? "true" : undefined}
+            onClick={() => setHeroIndex(index)}
+          />
+        ))}
+      </div>
 
-      <section className="pro-ai">
+      <section className="pro-ai" id="ai-selector">
         <div>
           <h2>AI 智能选型助手</h2>
           <p>输入您的需求，AI 为您推荐最合适的产品方案。</p>
