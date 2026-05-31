@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 import products from "../data/products.json";
 import "./styles.css";
 
+const postModules = import.meta.glob("../posts/**/*.md", { query: "?raw", import: "default", eager: true });
+
 const redirectedPath = sessionStorage.getItem("frantaSpaRedirect");
 if (redirectedPath) {
   sessionStorage.removeItem("frantaSpaRedirect");
@@ -24,6 +26,15 @@ const categoryMeta = {
   "覆塑管": ["覆塑管系统", "外覆保护层，适合复杂安装环境"]
 };
 
+const categoryRelatedTags = {
+  "沟槽管件": ["沟槽", "沟槽接头", "消防", "水务"],
+  "双卡管件": ["双卡", "环压", "薄壁不锈钢", "安装"],
+  "单卡管件": ["单卡", "环压", "快装", "建筑给水"],
+  "不锈钢管": ["不锈钢水管", "不锈钢管道", "304", "316L"],
+  "保温管": ["保温", "冷热水", "节能", "不锈钢管道"],
+  "覆塑管": ["覆塑", "防腐", "复杂安装", "不锈钢水管"]
+};
+
 const projectCases = [
   ["海宁水务扩建工程", "DN100-DN300 沟槽系统", "管网长度：3200 米"],
   ["昆山第二水厂改造", "双卡压系统解决方案", "管网长度：2800 米"],
@@ -39,11 +50,200 @@ const downloadCards = [
   ["检测报告", "PDF", "DOC"]
 ];
 
-const blogPosts = [
-  ["沟槽连接和环压连接如何选择", "从施工效率、压力等级、维护方式比较两种管路连接方案。", "2024-05-12", products[0]],
-  ["不锈钢管件选型的 6 个参数", "材质、规格、压力、介质、连接方式和执行标准是询价前核心信息。", "2024-05-08", products.find((item) => item.category === "单卡管件") || products[1]],
-  ["水务系统中分水器的典型应用", "用于泵房、净水、多支路设备配套时，需要关注流量与支路数量。", "2024-05-05", products.find((item) => item.category === "不锈钢管") || products[2]]
+const fallbackBlogPosts = [
+  {
+    title: "沟槽连接和环压连接如何选择",
+    summary: "从施工效率、压力等级、维护方式比较两种管路连接方案。",
+    date: "2024-05-12",
+    tags: ["沟槽", "环压", "水务"],
+    href: "/downloads/",
+    product: products[0]
+  },
+  {
+    title: "不锈钢管件选型的 6 个参数",
+    summary: "材质、规格、压力、介质、连接方式和执行标准是询价前核心信息。",
+    date: "2024-05-08",
+    tags: ["不锈钢水管", "304", "316L"],
+    href: "/downloads/",
+    product: products.find((item) => item.category === "单卡管件") || products[1]
+  },
+  {
+    title: "水务系统中分水器的典型应用",
+    summary: "用于泵房、净水、多支路设备配套时，需要关注流量与支路数量。",
+    date: "2024-05-05",
+    tags: ["水务", "分水器"],
+    href: "/downloads/",
+    product: products.find((item) => item.category === "不锈钢管") || products[2]
+  }
 ];
+
+const blogPosts = buildBlogPosts(postModules);
+const siteBlogPosts = (blogPosts.length ? blogPosts : fallbackBlogPosts).sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+
+function buildBlogPosts(modules) {
+  return Object.entries(modules).map(([path, markdown]) => {
+    const meta = parseFrontmatter(markdown);
+    const slug = path.split("/").pop().replace(/\.(md|mdx)$/i, "");
+    const product = productForTags(meta.tags, meta.title);
+
+    return {
+      title: meta.title || slug,
+      summary: meta.description || firstParagraph(markdown),
+      date: meta.pubDate || meta.date || "",
+      tags: meta.tags,
+      href: `/downloads/?article=${encodeURIComponent(slug)}`,
+      product
+    };
+  });
+}
+
+function parseFrontmatter(markdown = "") {
+  const match = markdown.match(/^---\s*\n([\s\S]*?)\n---/);
+  if (!match) return { tags: [] };
+
+  const lines = match[1].split(/\r?\n/);
+  const meta = { tags: [] };
+  let currentKey = "";
+
+  for (const line of lines) {
+    const listItem = line.match(/^\s*-\s*(.+)$/);
+    if (listItem && currentKey === "tags") {
+      meta.tags.push(cleanFrontmatterValue(listItem[1]));
+      continue;
+    }
+
+    const pair = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
+    if (!pair) continue;
+
+    currentKey = pair[1];
+    const value = cleanFrontmatterValue(pair[2]);
+    if (currentKey === "tags") {
+      meta.tags = value ? value.split(/[，,]/).map((item) => item.trim()).filter(Boolean) : [];
+    } else {
+      meta[currentKey] = value;
+    }
+  }
+
+  return meta;
+}
+
+function cleanFrontmatterValue(value = "") {
+  return value.trim().replace(/^["']|["']$/g, "");
+}
+
+function firstParagraph(markdown = "") {
+  return markdown
+    .replace(/^---[\s\S]*?---/, "")
+    .split(/\n{2,}/)
+    .map((item) => item.replace(/^#+\s*/, "").trim())
+    .find((item) => item && !item.startsWith("|")) || "";
+}
+
+function productForTags(tags = [], title = "") {
+  const text = [...tags, title].join(" ");
+  return products.find((product) => {
+    const categoryTags = categoryRelatedTags[product.category] || [];
+    return [product.category, product.name, ...categoryTags].some((tag) => text.includes(tag));
+  }) || products[0];
+}
+
+function getRelatedPosts(tags = [], limit = 3) {
+  const needles = tags.filter(Boolean);
+  const scored = siteBlogPosts.map((post) => {
+    const text = `${post.title} ${post.summary} ${(post.tags || []).join(" ")}`;
+    const score = needles.reduce((total, tag) => total + (text.includes(tag) ? 2 : 0), 0);
+    return { post, score };
+  });
+
+  return scored
+    .sort((a, b) => b.score - a.score || String(b.post.date || "").localeCompare(String(a.post.date || "")))
+    .slice(0, limit)
+    .map((item) => item.post);
+}
+
+function rankProducts(query = "", limit = 4) {
+  const tokens = query.toLowerCase().split(/[\s,，、/]+/).filter(Boolean);
+  const scored = products.map((product) => {
+    const tags = categoryRelatedTags[product.category] || [];
+    const text = `${product.name} ${product.category} ${product.id} ${product.material} ${product.size} ${product.pressure} ${product.connection} ${product.description} ${tags.join(" ")}`.toLowerCase();
+    const score = tokens.reduce((total, token) => total + (text.includes(token) ? 2 : 0), 0) + (query && text.includes(query.toLowerCase()) ? 3 : 0);
+    return { product, score };
+  });
+
+  return scored
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((item) => item.product);
+}
+
+function buildAiContext(query) {
+  const recommended = rankProducts(query, 4);
+  const tags = recommended.flatMap((product) => [product.category, ...(categoryRelatedTags[product.category] || [])]);
+  const posts = getRelatedPosts(tags, 3);
+  const downloads = recommended.slice(0, 3).flatMap((product) => [
+    { title: `${product.name} PDF 样本`, type: "PDF", href: product.pdf },
+    { title: `${product.name} CAD 图纸`, type: "CAD", href: product.cad }
+  ]).slice(0, 4);
+
+  return {
+    question: query,
+    products: recommended.map((product) => ({
+      id: product.id,
+      slug: product.slug,
+      name: product.name,
+      category: product.category,
+      material: product.material,
+      size: product.size,
+      pressure: product.pressure,
+      connection: product.connection,
+      image: product.image,
+      pdf: product.pdf,
+      cad: product.cad
+    })),
+    posts: posts.map(({ title, summary, date, tags: postTags, href }) => ({ title, summary, date, tags: postTags, href })),
+    downloads
+  };
+}
+
+function localAiResult(context) {
+  const first = context.products[0];
+  return {
+    answer: first
+      ? `建议优先查看 ${first.name}。它与当前工况关键词匹配度最高，可继续核对规格、压力等级和连接方式，再下载 CAD/PDF 做工程比对。`
+      : "请补充公称通径、压力等级、连接方式或使用场景，系统会给出更准确的产品建议。",
+    products: context.products,
+    posts: context.posts,
+    downloads: context.downloads,
+    source: "local"
+  };
+}
+
+async function askAiSearch(query) {
+  const context = buildAiContext(query);
+
+  try {
+    const response = await fetch("/api/ai-search", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(context)
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return {
+        ...localAiResult(context),
+        ...data,
+        products: data.products?.length ? data.products : context.products,
+        posts: data.posts?.length ? data.posts : context.posts,
+        downloads: data.downloads?.length ? data.downloads : context.downloads
+      };
+    }
+  } catch {
+    // Vite dev does not serve Pages Functions; keep the homepage usable locally.
+  }
+
+  return localAiResult(context);
+}
 
 function getQuote() {
   try {
@@ -156,11 +356,19 @@ function Header({ active, navigate, quoteCount }) {
 
 function Home({ navigate }) {
   const [aiQuery, setAiQuery] = useState("");
+  const [aiResult, setAiResult] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
   const heroProduct = products.find((item) => item.slug === "grooved-tee") || products[0];
+  const latestPosts = siteBlogPosts.slice(0, 3);
 
-  function submitAi(event) {
+  async function submitAi(event) {
     event.preventDefault();
-    navigate(`/products/?q=${encodeURIComponent(aiQuery)}`);
+    const query = aiQuery.trim();
+    if (!query) return;
+
+    setAiLoading(true);
+    setAiResult(await askAiSearch(query));
+    setAiLoading(false);
   }
 
   return (
@@ -198,6 +406,9 @@ function Home({ navigate }) {
                 <ProductImage product={product} />
                 <h3>{meta[0]}</h3>
                 <p>{meta[1]}</p>
+                <div className="pro-category-tags">
+                  {(categoryRelatedTags[category] || []).slice(0, 3).map((tag) => <span key={tag}>{tag}</span>)}
+                </div>
               </Link>
             );
           })}
@@ -222,23 +433,61 @@ function Home({ navigate }) {
           <p>输入您的需求，AI 为您推荐最合适的产品方案。</p>
           <form onSubmit={submitAi} className="pro-ai-form">
             <input value={aiQuery} onChange={(event) => setAiQuery(event.target.value)} placeholder="输入公称通径、使用场景、压力等级..." />
-            <button className="button" type="submit">开始选型</button>
+            <button className="button" type="submit" disabled={aiLoading}>{aiLoading ? "分析中" : "开始选型"}</button>
           </form>
         </div>
-        <div className="ai-ghost-card">
-          <strong>推荐方案</strong>
-          <span>沟槽式 90° 弯头</span>
-          <span>DN100 / SUS304 / PN16</span>
-          <Link href="/products/" navigate={navigate}>查看详情</Link>
-        </div>
+        {aiResult ? <AiResultCard result={aiResult} navigate={navigate} /> : (
+          <div className="ai-ghost-card">
+            <strong>推荐方案</strong>
+            <span>沟槽式 90° 弯头</span>
+            <span>DN100 / SUS304 / PN16</span>
+            <Link href="/products/" navigate={navigate}>查看详情</Link>
+          </div>
+        )}
       </section>
 
       <HomeBlock title="技术博客" action="查看全部文章 →" href="/downloads/" navigate={navigate}>
         <div className="pro-blog-grid">
-          {blogPosts.map(([title, text, date, product]) => <article className="pro-blog-card" key={title}><ProductImage product={product} /><div><h3>{title}</h3><p>{text}</p><span>{date}</span><Link href="/downloads/" navigate={navigate}>阅读全文 →</Link></div></article>)}
+          {latestPosts.map((post) => <BlogCard key={post.title} post={post} navigate={navigate} />)}
         </div>
       </HomeBlock>
     </div>
+  );
+}
+
+function AiResultCard({ result, navigate }) {
+  return (
+    <div className="ai-result-card">
+      <strong>AI 推荐</strong>
+      <p>{result.answer}</p>
+      <div className="ai-result-list">
+        {(result.products || []).slice(0, 2).map((product) => (
+          <Link key={product.slug} href={`/products/${product.slug}/`} navigate={navigate}>
+            <span>{product.category}</span>
+            <b>{product.name}</b>
+            <small>{product.size} · {product.pressure}</small>
+          </Link>
+        ))}
+      </div>
+      <div className="ai-result-links">
+        {(result.posts || []).slice(0, 2).map((post) => <Link key={post.title} href={post.href || "/downloads/"} navigate={navigate}>{post.title}</Link>)}
+        {(result.downloads || []).slice(0, 2).map((file) => <a key={`${file.type}-${file.title}`} href={file.href}>{file.type}：{file.title}</a>)}
+      </div>
+    </div>
+  );
+}
+
+function BlogCard({ post, navigate }) {
+  return (
+    <article className="pro-blog-card">
+      <ProductImage product={post.product} />
+      <div>
+        <h3>{post.title}</h3>
+        <p>{post.summary}</p>
+        <span>{post.date}</span>
+        <Link href={post.href || "/downloads/"} navigate={navigate}>阅读全文 →</Link>
+      </div>
+    </article>
   );
 }
 
@@ -257,6 +506,8 @@ function Products({ addQuote, navigate }) {
   const [pressure, setPressure] = useState("全部");
   const [connection, setConnection] = useState("全部");
   const [keyword, setKeyword] = useState(params.get("q") || "");
+  const relatedTags = category === "全部" ? ["不锈钢水管", "沟槽", "双卡", "单卡"] : (categoryRelatedTags[category] || [category]);
+  const relatedPosts = getRelatedPosts(relatedTags, 3);
 
   const filtered = useMemo(() => products.filter((product) => {
     const matchKeyword = `${product.name}${product.id}${product.description}`.toLowerCase().includes(keyword.toLowerCase());
@@ -304,12 +555,34 @@ function Products({ addQuote, navigate }) {
             <button>默认排序</button>
           </div>
           <CategoryStrip active={category} setActive={setCategory} />
+          <RelatedPostsPanel title={category === "全部" ? "相关技术文章" : `${categoryMeta[category]?.[0] || category} · 技术文章`} posts={relatedPosts} navigate={navigate} />
           <div className="catalog-card-grid">
             {filtered.map((product) => <CatalogProductCard key={product.slug} product={product} addQuote={addQuote} navigate={navigate} />)}
           </div>
         </div>
       </section>
     </div>
+  );
+}
+
+function RelatedPostsPanel({ title, posts, navigate }) {
+  if (!posts.length) return null;
+
+  return (
+    <section className="catalog-related-posts">
+      <div>
+        <strong>{title}</strong>
+        <small>按当前分类标签自动匹配</small>
+      </div>
+      <div>
+        {posts.map((post) => (
+          <Link key={post.title} href={post.href || "/downloads/"} navigate={navigate}>
+            <span>{post.date}</span>
+            {post.title}
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -401,9 +674,11 @@ function ProductCard({ product, addQuote, navigate }) {
 
 function ProductDetail({ product, addQuote, navigate }) {
   const related = products.filter((item) => item.category === product.category && item.slug !== product.slug).slice(0, 3);
+  const relatedPosts = getRelatedPosts([product.category, product.name, ...(categoryRelatedTags[product.category] || [])], 3);
   return (
     <>
       <section className="detail-layout"><div className="detail-media"><ProductImage product={product} /></div><div className="detail-copy"><p className="eyebrow">{product.category} · {product.id}</p><h1>{product.name}</h1><p>{product.description}</p><section className="detail-panel"><h2>核心参数</h2><SpecTable product={product} /></section><div className="detail-actions"><button className="button large" onClick={() => addQuote(product.slug)}>加入询价单</button><a className="button ghost large" href={product.pdf}>PDF 样本</a><a className="button ghost large" href={product.cad}>CAD 图纸</a></div></div></section>
+      <section className="section"><div className="section-head"><h2>相关技术文章</h2><Link href="/downloads/" navigate={navigate}>查看资料中心</Link></div><div className="detail-blog-grid">{relatedPosts.map((post) => <BlogCard key={post.title} post={post} navigate={navigate} />)}</div></section>
       <section className="section"><div className="section-head"><h2>相关产品</h2><Link href="/products/" navigate={navigate}>返回产品中心</Link></div><div className="product-grid">{related.map((item) => <ProductCard key={item.slug} product={item} addQuote={addQuote} navigate={navigate} />)}</div></section>
     </>
   );

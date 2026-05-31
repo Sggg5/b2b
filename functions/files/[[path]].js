@@ -1,8 +1,11 @@
 const allowedPrefixes = [
   "products/images/",
   "products/pdf/",
-  "products/cad/"
+  "products/cad/",
+  "posts/"
 ];
+
+const r2AssetPrefix = "b2b-assets/";
 
 const contentTypes = {
   ".svg": "image/svg+xml; charset=utf-8",
@@ -12,7 +15,8 @@ const contentTypes = {
   ".webp": "image/webp",
   ".pdf": "application/pdf",
   ".dwg": "application/acad",
-  ".dxf": "image/vnd.dxf"
+  ".dxf": "image/vnd.dxf",
+  ".md": "text/markdown; charset=utf-8"
 };
 
 export async function onRequestGet({ env, params, request }) {
@@ -28,7 +32,10 @@ export async function onRequestGet({ env, params, request }) {
 
   let object;
   try {
-    object = await env.PRODUCT_BUCKET.get(key);
+    object = await env.PRODUCT_BUCKET.get(`${r2AssetPrefix}${key}`);
+    if (!object) {
+      object = await env.PRODUCT_BUCKET.get(key);
+    }
   } catch {
     return staticAssetFallback(env, request);
   }
