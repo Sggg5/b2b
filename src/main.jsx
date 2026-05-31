@@ -402,8 +402,8 @@ function Home({ navigate }) {
       <section className="pro-hero">
         <div className="pro-hero-copy">
           <p className="eyebrow">STAINLESS PIPING COMPONENTS</p>
-          <h1>不锈钢管件、沟槽管件与水务系统配套选型</h1>
-          <p>5秒内完成粗略选型：提供产品、查看参数、下载 CAD/PDF、加入询价单，快速响应工程需求。</p>
+          <h1>专业不锈钢管及管件制造商，支持一键定制</h1>
+          <p>5秒内完成粗略选型：提供产品、查看参数、加入询价单，快速响应工程需求。</p>
           <div className="pro-hero-actions">
             <Link className="button large" href="/products/" navigate={navigate}>进入产品中心</Link>
             <Link className="button ghost large" href="/quote/" navigate={navigate}>提交询价</Link>
@@ -842,7 +842,7 @@ function Footer({ navigate }) {
       <div className="footer-brand">
         <strong>Franta B2B</strong>
         <p>不锈钢管件专家 | 304/316L 优质材料 | 精密制造</p>
-        <small>© 2024 Franta. All rights reserved.</small>
+        <small>© 2026 Franta. All rights reserved.</small>
       </div>
       <div className="footer-column">
         <strong>产品中心</strong>
