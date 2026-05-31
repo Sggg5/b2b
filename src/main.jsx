@@ -143,11 +143,34 @@ function Link({ href, navigate, children, className }) {
 }
 
 function ProductImage({ product, className = "" }) {
-  return <img className={className} src={product.image} alt={product.name} loading="lazy" />;
+  const [src, setSrc] = useState(product.image);
+  return <img className={className} src={src} alt={product.name} loading="eager" onError={() => setSrc(imageFallback(product.image, product.name))} />;
 }
 
 function R2Image({ src, alt, className = "" }) {
-  return <img className={className} src={src} alt={alt} loading="lazy" />;
+  const [currentSrc, setCurrentSrc] = useState(src);
+  return <img className={className} src={currentSrc} alt={alt} loading="eager" onError={() => setCurrentSrc(imageFallback(src, alt))} />;
+}
+
+function imageFallback(src, alt) {
+  const key = `${src} ${alt}`;
+  const hue = Math.abs([...key].reduce((sum, char) => sum + char.charCodeAt(0), 0)) % 38;
+  const isPipe = key.includes("pipe");
+  const isManifold = key.includes("manifold");
+  const isFlange = key.includes("flange") || key.includes("valve");
+  const isPress = key.includes("press");
+  const title = alt.replace(/[<>&]/g, "").slice(0, 28);
+  const productShape = isPipe
+    ? `<g stroke="#2b3947" stroke-width="34" stroke-linecap="round"><path d="M150 440H1050"/><path d="M180 560H1020"/><path d="M220 680H980"/></g>`
+    : isManifold
+      ? `<g stroke="#2b3947" stroke-width="28" stroke-linecap="round" fill="none"><path d="M170 610H1030"/><path d="M300 610V360M460 610V360M620 610V360M780 610V360M940 610V360"/></g>`
+      : isFlange
+        ? `<g fill="none" stroke="#2b3947" stroke-width="30"><circle cx="600" cy="560" r="230"/><circle cx="600" cy="560" r="92"/><circle cx="455" cy="415" r="28"/><circle cx="745" cy="415" r="28"/><circle cx="455" cy="705" r="28"/><circle cx="745" cy="705" r="28"/></g>`
+        : isPress
+          ? `<g fill="none" stroke="#2b3947" stroke-width="32" stroke-linecap="round"><path d="M190 600H475c70 0 126-56 126-126V310h300"/><path d="M250 520h180M695 390h185"/></g>`
+          : `<g fill="none" stroke="#2b3947" stroke-width="32" stroke-linecap="round"><path d="M190 620H520c92 0 166-74 166-166V300h330"/><path d="M240 530h220M770 405h205"/></g>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200"><rect width="1200" height="1200" fill="#fff"/><rect x="70" y="70" width="1060" height="1060" rx="42" fill="#fff" stroke="#e3e8ed"/><ellipse cx="610" cy="820" rx="360" ry="42" fill="#eef2f5"/><g transform="translate(0 ${hue - 18})">${productShape}</g><rect x="120" y="980" width="960" height="2" fill="#e4e9ee"/><text x="120" y="1048" fill="#1f2c38" font-family="Arial, sans-serif" font-size="44" font-weight="700">${title}</text><text x="120" y="1105" fill="#6b7580" font-family="Arial, sans-serif" font-size="25">1200x1200 white background product image</text></svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
 function Header({ active, navigate, quoteCount }) {
@@ -171,11 +194,20 @@ function Header({ active, navigate, quoteCount }) {
 
 function Home({ addQuote, navigate }) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [aiUse, setAiUse] = useState("");
+  const [aiSize, setAiSize] = useState("");
+  const [aiPressure, setAiPressure] = useState("");
   const heroProduct = products[6] || products[0];
 
   function submitSearch(event) {
     event.preventDefault();
     const query = searchTerm.trim();
+    navigate(query ? `/products/?q=${encodeURIComponent(query)}` : "/products/");
+  }
+
+  function submitAi(event) {
+    event.preventDefault();
+    const query = [aiUse, aiSize, aiPressure].filter(Boolean).join(" ");
     navigate(query ? `/products/?q=${encodeURIComponent(query)}` : "/products/");
   }
 
@@ -190,18 +222,10 @@ function Home({ addQuote, navigate }) {
             <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="搜索型号、分类、材质，如 DN50、法兰、SUS304" />
             <button className="button" type="submit">搜索产品</button>
           </form>
-          <div className="quick-paths">
-            <span>选型路径</span>
-            <button type="button" onClick={() => navigate("/products/?category=沟槽管件")}>沟槽连接</button>
-            <button type="button" onClick={() => navigate("/products/?category=环压管件")}>环压快装</button>
-            <button type="button" onClick={() => navigate("/downloads/")}>下载图纸</button>
-            <button type="button" onClick={() => navigate("/quote/")}>提交询价</button>
-          </div>
           <div className="hero-actions">
             <Link className="button large" href="/products/" navigate={navigate}>进入产品中心</Link>
             <Link className="button ghost large" href="/quote/" navigate={navigate}>提交询价</Link>
           </div>
-          <div className="hero-metrics"><span><strong>{products.length}</strong> 款产品</span><span><strong>{categories.length}</strong> 大分类</span><span><strong>R2</strong> 文件资料</span></div>
         </div>
         <div className="hero-visual">
           <div className="hero-visual-main">
@@ -212,24 +236,22 @@ function Home({ addQuote, navigate }) {
               <p>{heroProduct.material} · {heroProduct.size} · {heroProduct.pressure}</p>
             </div>
           </div>
-          <div className="hero-product-board compact-board">
-            {products.slice(0, 3).map((product) => <ProductMini key={product.slug} product={product} navigate={navigate} />)}
-          </div>
         </div>
       </section>
       <SectionHead eyebrow="Product Range" title="产品分类" action={<Link className="text-button" href="/products/" navigate={navigate}>查看全部</Link>} />
       <section className="home-section home-category-grid">
         {categories.map((category) => {
-          return <Link key={category} className="home-category-card" href={`/products/?category=${encodeURIComponent(category)}`} navigate={navigate}><R2Image src={categoryImages[category]} alt={`${category} 分类图`} /><span>{products.filter((item) => item.category === category).length} 款</span><strong>{category}</strong></Link>;
+          return <Link key={category} className="home-category-card" href={`/products/?category=${encodeURIComponent(category)}`} navigate={navigate}><R2Image src={categoryImages[category]} alt={`${category} 分类图`} /><strong>{category}</strong></Link>;
         })}
       </section>
       <section className="home-section ai-selector">
-        <div><p className="eyebrow">AI Selection</p><h2>{"AI \u9009\u578b"}</h2><p>{"按应用场景、管径、压力、材质和连接方式，快速缩小产品范围，进入产品中心完成询价。"}</p></div>
-        <div className="ai-selector-actions">
-          <button type="button" onClick={() => navigate("/products/")}>{"产品筛选"}</button>
-          <button type="button" onClick={() => navigate("/downloads/")}>{"图纸资料"}</button>
-          <button type="button" onClick={() => navigate("/quote/")}>{"人工询价"}</button>
-        </div>
+        <div><p className="eyebrow">AI Selection</p><h2>{"AI \u9009\u578b"}</h2><p>{"\u8f93\u5165 3 \u4e2a\u6761\u4ef6\uff0c\u5148\u7f29\u5c0f\u8303\u56f4\uff0c\u518d\u8fdb\u5165\u4ea7\u54c1\u4e2d\u5fc3\u67e5\u770b\u53c2\u6570\u548c\u8d44\u6599\u3002"}</p></div>
+        <form className="ai-selector-form" onSubmit={submitAi}>
+          <label>{"\u5e94\u7528\u573a\u666f"}<select value={aiUse} onChange={(event) => setAiUse(event.target.value)}><option value="">{"\u8bf7\u9009\u62e9"}</option><option>{"\u6c34\u52a1\u7cfb\u7edf"}</option><option>{"\u6d88\u9632\u7ed9\u6392\u6c34"}</option><option>{"\u5546\u4e1a\u5efa\u7b51"}</option><option>{"\u5de5\u4e1a\u5faa\u73af\u6c34"}</option></select></label>
+          <label>{"\u7ba1\u5f84\u8303\u56f4"}<select value={aiSize} onChange={(event) => setAiSize(event.target.value)}><option value="">{"\u8bf7\u9009\u62e9"}</option><option>{"DN15-DN50"}</option><option>{"DN50-DN150"}</option><option>{"DN150-DN300"}</option></select></label>
+          <label>{"\u538b\u529b\u7b49\u7ea7"}<select value={aiPressure} onChange={(event) => setAiPressure(event.target.value)}><option value="">{"\u8bf7\u9009\u62e9"}</option><option>{"PN10"}</option><option>{"PN16"}</option><option>{"PN25"}</option><option>{"PN40"}</option></select></label>
+          <button className="button large" type="submit">{"\u67e5\u770b\u63a8\u8350\u4ea7\u54c1"}</button>
+        </form>
       </section>
       <SectionHead eyebrow="Water Projects" title="水务项目案例" />
       <section className="home-section project-case-grid">
