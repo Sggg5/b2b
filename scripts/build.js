@@ -99,29 +99,123 @@ function productCard(product) {
 }
 
 function homePage() {
+  const featuredProducts = products.slice(0, 6);
+  const hotProducts = products.slice(2, 8);
+  const solutions = [
+    ["市政水务系统", "不锈钢管、法兰、阀门配件组合，适配泵房、管廊和二次供水。", "不锈钢管"],
+    ["消防与给排水", "沟槽管件快速连接，减少现场施工时间，便于后期维护。", "沟槽管件"],
+    ["商业建筑分区供水", "分水器与环压管件配套，适合多支路、紧凑空间和标准化安装。", "分水器"],
+    ["工业循环水管路", "按压力、材质和连接方式选型，支持资料下载与项目询价。", "环压管件"]
+  ];
+  const blogPosts = [
+    ["沟槽连接和环压连接如何选择", "从施工效率、压力等级、维护方式比较常见不锈钢管路连接方案。"],
+    ["不锈钢管件选型前要确认的 6 个参数", "材质、规格、压力、介质、连接方式和执行标准是询价前的核心信息。"],
+    ["水务系统中分水器的典型应用", "用于地暖、净水、多支路供水和设备配套时，需要关注流量与支路数量。"]
+  ];
+  const cases = [
+    ["商业综合体给水改造", "环压管件 + 304 薄壁不锈钢管", "缩短现场安装周期，减少动火作业。"],
+    ["市政泵房设备配套", "法兰 + 阀门配件 + 工业不锈钢管", "按压力等级统一选型，资料交付更完整。"],
+    ["厂区循环水支路改造", "沟槽管件 + 分水器", "支路清晰，便于后期维护和扩展。"]
+  ];
+  const advantages = [
+    ["参数清楚", "围绕材质、规格、压力、连接方式组织产品资料。"],
+    ["资料完整", "PDF 样本与 CAD 图纸统一入口，后续可接 R2 文件库。"],
+    ["快速询价", "选型后直接加入询价单，减少来回沟通成本。"],
+    ["工程友好", "面向水务、消防、建筑给水和工业循环水场景。"]
+  ];
+
   return page({
     title: "Franta B2B | 工业不锈钢管件与博客",
     description: "Franta 轻量 B2B 网站，包含博客入口、产品中心、下载中心与询价单。",
     active: "首页",
-    body: `<section class="hero">
+    body: `<section class="home-hero">
   <div class="hero-copy">
-    <p class="eyebrow">工业管路 · 选型 · 询价</p>
-    <h1>不锈钢管件产品资料，一站式查找和询价</h1>
-    <p>按分类、材质、压力和连接方式快速筛选，适合轻量 B2B 官网与现有博客一起部署。</p>
+    <p class="eyebrow">Stainless Piping Components</p>
+    <h1>面向水务系统的不锈钢管件选型与询价平台</h1>
+    <p>覆盖沟槽管件、环压管件、分水器、不锈钢管、法兰与阀门配件，以清晰参数、资料下载和询价篮支持工程采购。</p>
     <div class="hero-actions">
       <a class="button large" href="/products/">进入产品中心</a>
       <a class="button ghost large" href="/downloads/">下载资料</a>
     </div>
+    <div class="hero-metrics" aria-label="能力概览">
+      <span><strong>${products.length}</strong> 款产品</span>
+      <span><strong>${categories.length}</strong> 大分类</span>
+      <span><strong>R2</strong> 资料文件</span>
+    </div>
   </div>
-  <div class="hero-panel" aria-label="产品分类概览">
-    ${categories.map((category) => `<a href="/products/?category=${encodeURIComponent(category)}">${category}<span>${products.filter((product) => product.category === category).length} 款</span></a>`).join("")}
+  <div class="hero-product-board" aria-label="核心产品">
+    ${featuredProducts.slice(0, 4).map((product) => `<a class="home-product-mini" href="/products/${product.slug}/"><img src="${product.image}" alt="${escapeHtml(product.name)}"><span>${escapeHtml(product.category)}</span><strong>${escapeHtml(product.name)}</strong></a>`).join("")}
   </div>
 </section>
-<section class="section">
+<section class="home-section product-category-section">
+  <div class="home-section-head">
+    <div>
+      <p class="eyebrow">Product Range</p>
+      <h2>按工业管路场景组织产品</h2>
+    </div>
+    <a class="text-button" href="/products/">查看全部产品</a>
+  </div>
+  <div class="home-category-grid">
+    ${categories.map((category) => {
+      const product = products.find((item) => item.category === category);
+      return `<a class="home-category-card" href="/products/?category=${encodeURIComponent(category)}"><img src="${product.image}" alt="${escapeHtml(category)}"><span>${products.filter((item) => item.category === category).length} 款</span><strong>${escapeHtml(category)}</strong></a>`;
+    }).join("")}
+  </div>
+</section>
+<section class="home-section">
+  <div class="home-section-head">
+    <div>
+      <p class="eyebrow">Popular</p>
+      <h2>热门产品</h2>
+    </div>
+    <a class="text-button" href="/quote/">查看询价单</a>
+  </div>
+  <div class="hot-product-grid">
+    ${hotProducts.map((product) => `<article class="hot-product-card"><a class="hot-product-image" href="/products/${product.slug}/"><img src="${product.image}" alt="${escapeHtml(product.name)}"></a><div><span>${escapeHtml(product.id)}</span><h3><a href="/products/${product.slug}/">${escapeHtml(product.name)}</a></h3><p>${escapeHtml(product.material)} · ${escapeHtml(product.size)} · ${escapeHtml(product.pressure)}</p></div><button class="button small" data-add-quote="${escapeHtml(product.slug)}">加入询价</button></article>`).join("")}
+  </div>
+</section>
+<section class="home-section solution-band">
+  <div class="home-section-head">
+    <div>
+      <p class="eyebrow">Solutions</p>
+      <h2>行业解决方案</h2>
+    </div>
+  </div>
+  <div class="solution-grid">
+    ${solutions.map(([title, text, category]) => `<a class="solution-card" href="/products/?category=${encodeURIComponent(category)}"><span>${escapeHtml(category)}</span><h3>${escapeHtml(title)}</h3><p>${escapeHtml(text)}</p></a>`).join("")}
+  </div>
+</section>
+<section class="home-section split-home-section">
   <div class="section-heading">
-    <p class="eyebrow">Blog</p>
-    <h2>博客功能保留</h2>
-    <p>当前仓库尚未包含博客源文件；新增页面采用独立静态结构，后续可与 Markdown 博客列表并行。</p>
+    <p class="eyebrow">Technical Blog</p>
+    <h2>技术博客入口</h2>
+    <p>围绕选型、施工、资料交付和水务系统应用持续沉淀技术内容。</p>
+    <a class="button ghost" href="/products/">从产品参数开始选型</a>
+  </div>
+  <div class="article-list">
+    ${blogPosts.map(([title, text]) => `<article><span>选型指南</span><h3>${escapeHtml(title)}</h3><p>${escapeHtml(text)}</p></article>`).join("")}
+  </div>
+</section>
+<section class="home-section">
+  <div class="home-section-head">
+    <div>
+      <p class="eyebrow">Cases</p>
+      <h2>客户案例</h2>
+    </div>
+  </div>
+  <div class="case-grid">
+    ${cases.map(([title, productsText, result]) => `<article class="case-card"><h3>${escapeHtml(title)}</h3><strong>${escapeHtml(productsText)}</strong><p>${escapeHtml(result)}</p></article>`).join("")}
+  </div>
+</section>
+<section class="home-section advantage-section">
+  <div class="home-section-head">
+    <div>
+      <p class="eyebrow">Advantages</p>
+      <h2>企业优势</h2>
+    </div>
+  </div>
+  <div class="advantage-grid">
+    ${advantages.map(([title, text]) => `<article><strong>${escapeHtml(title)}</strong><p>${escapeHtml(text)}</p></article>`).join("")}
   </div>
 </section>`
   });
