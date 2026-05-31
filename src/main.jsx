@@ -58,7 +58,7 @@ const fallbackBlogPosts = [
     summary: "从施工效率、压力等级、维护方式比较两种管路连接方案。",
     date: "2024-05-12",
     tags: ["沟槽", "环压", "水务"],
-    href: blogHomeUrl,
+    href: "/blog/grooved-vs-press-selection/",
     body: "从施工效率、压力等级、维护方式比较沟槽连接和环压连接方案。",
     product: products[0]
   },
@@ -68,7 +68,7 @@ const fallbackBlogPosts = [
     summary: "材质、规格、压力、介质、连接方式和执行标准是询价前核心信息。",
     date: "2024-05-08",
     tags: ["不锈钢水管", "304", "316L"],
-    href: blogHomeUrl,
+    href: "/blog/stainless-fitting-selection-parameters/",
     body: "材质、规格、压力、介质、连接方式和执行标准是询价前核心信息。",
     product: products.find((item) => item.category === "单卡管件") || products[1]
   },
@@ -78,7 +78,7 @@ const fallbackBlogPosts = [
     summary: "用于泵房、净水、多支路设备配套时，需要关注流量与支路数量。",
     date: "2024-05-05",
     tags: ["水务", "分水器"],
-    href: blogHomeUrl,
+    href: "/blog/manifold-water-system-application/",
     body: "用于泵房、净水、多支路设备配套时，需要关注流量与支路数量。",
     product: products.find((item) => item.category === "不锈钢管") || products[2]
   }
@@ -104,7 +104,7 @@ function buildBlogPosts(modules) {
       summary: meta.description || firstParagraph(markdown),
       date: meta.pubDate || meta.date || "",
       tags: meta.tags,
-      href: blogHomeUrl,
+      href: `/blog/${slug}/`,
       body: markdown.replace(/^---[\s\S]*?---/, "").trim(),
       product
     };
@@ -422,6 +422,25 @@ function Home({ navigate }) {
       </section>
       <div className="slider-dots"><span /><span /><span /></div>
 
+      <section className="pro-ai">
+        <div>
+          <h2>AI 智能选型助手</h2>
+          <p>输入您的需求，AI 为您推荐最合适的产品方案。</p>
+          <form onSubmit={submitAi} className="pro-ai-form">
+            <input value={aiQuery} onChange={(event) => setAiQuery(event.target.value)} placeholder="输入公称通径、使用场景、压力等级..." />
+            <button className="button" type="submit" disabled={aiLoading}>{aiLoading ? "分析中" : "开始选型"}</button>
+          </form>
+        </div>
+        {aiResult ? <AiResultCard result={aiResult} navigate={navigate} /> : (
+          <div className="ai-ghost-card">
+            <strong>推荐方案</strong>
+            <span>沟槽式 90° 弯头</span>
+            <span>DN100 / SUS304 / PN16</span>
+            <Link href="/products/" navigate={navigate}>查看详情</Link>
+          </div>
+        )}
+      </section>
+
       <HomeBlock title="产品分类" action="查看全部产品 →" href="/products/" navigate={navigate}>
         <div className="pro-category-grid">
           {categories.slice(0, 6).map((category) => {
@@ -452,25 +471,6 @@ function Home({ navigate }) {
           {downloadCards.map(([title, text, icon]) => <Link className="pro-download-card" key={title} href="/downloads/" navigate={navigate}><span>{icon}</span><strong>{title}</strong><small>{text}</small></Link>)}
         </div>
       </HomeBlock>
-
-      <section className="pro-ai">
-        <div>
-          <h2>AI 智能选型助手</h2>
-          <p>输入您的需求，AI 为您推荐最合适的产品方案。</p>
-          <form onSubmit={submitAi} className="pro-ai-form">
-            <input value={aiQuery} onChange={(event) => setAiQuery(event.target.value)} placeholder="输入公称通径、使用场景、压力等级..." />
-            <button className="button" type="submit" disabled={aiLoading}>{aiLoading ? "分析中" : "开始选型"}</button>
-          </form>
-        </div>
-        {aiResult ? <AiResultCard result={aiResult} navigate={navigate} /> : (
-          <div className="ai-ghost-card">
-            <strong>推荐方案</strong>
-            <span>沟槽式 90° 弯头</span>
-            <span>DN100 / SUS304 / PN16</span>
-            <Link href="/products/" navigate={navigate}>查看详情</Link>
-          </div>
-        )}
-      </section>
 
       <HomeBlock title="技术博客" action="查看全部文章 →" href={blogHomeUrl} navigate={navigate}>
         <div className="pro-blog-grid">
