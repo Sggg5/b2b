@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>询价单 | Franta B2B</title>
+  <meta name="description" content="查看已加入的产品并填写询价联系信息。">
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="返回首页">
+      <span class="brand-mark">F</span>
+      <span>
+        <strong>Franta B2B</strong>
+        <small>不锈钢管件产品中心</small>
+      </span>
+    </a>
+    <nav class="top-nav" aria-label="主导航">
+      <a class="" href="/">首页</a><a class="" href="/products/">产品中心</a><a class="" href="/downloads/">下载中心</a><a class="active" href="/quote/">询价单</a>
+    </nav>
+  </header>
+  <main>
+    <section class="page-head">
+  <p class="eyebrow">Quote</p>
+  <h1>询价单</h1>
+  <p>本页仅收集询价意向，不接支付、不做会员系统。提交后可接入 Pages Functions 与 D1。</p>
+</section>
+<section class="quote-layout">
+  <div>
+    <div class="toolbar"><strong>已选产品</strong><button class="text-button" id="clearQuote">清空</button></div>
+    <div id="quoteItems" class="quote-items"></div>
+  </div>
+  <form class="quote-form" id="quoteForm">
+    <label>公司名称<input name="company" required placeholder="请输入公司名称"></label>
+    <label>联系人<input name="name" required placeholder="请输入联系人"></label>
+    <label>电话 / 邮箱<input name="contact" required placeholder="手机号或邮箱"></label>
+    <label>补充需求<textarea name="message" rows="5" placeholder="数量、工况、交期、收货地等"></textarea></label>
+    <button class="button large full" type="submit">提交询价</button>
+    <p class="form-note" id="quoteMessage">当前为静态演示，提交不会发送到服务器。</p>
+  </form>
+</section>
+  </main>
+  <footer class="site-footer">
+    <div>
+      <strong>Franta B2B</strong>
+      <p>轻量静态产品中心，可平滑接入 Cloudflare Pages、R2 与 D1。</p>
+    </div>
+    <div class="footer-links">
+      <a href="/products/">产品中心</a>
+      <a href="/downloads/">下载中心</a>
+      <a href="/quote/">询价单</a>
+    </div>
+  </footer>
+  <script src="/assets/app.js" defer></script>
+  <script type="application/json" id="productsData">[{"id":"GC-90E-001","slug":"grooved-90-elbow-304","name":"304 不锈钢沟槽 90° 弯头","category":"沟槽管件","material":"SUS304","size":"DN50-DN150","pressure":"PN16","connection":"沟槽连接","description":"适用于消防、给排水与工业循环水系统，沟槽结构便于现场快速安装和维护。","image":"/files/products/images/grooved-90-elbow-304.svg","pdf":"/files/products/pdf/grooved-90-elbow-304.pdf","cad":"/files/products/cad/grooved-90-elbow-304.dwg"},{"id":"GC-T-002","slug":"grooved-tee-316","name":"316 不锈钢沟槽三通","category":"沟槽管件","material":"SUS316","size":"DN65-DN200","pressure":"PN16","connection":"沟槽连接","description":"用于主管分支连接，耐腐蚀性能强，适合潮湿或轻腐蚀工况。","image":"/files/products/images/grooved-tee-316.svg","pdf":"/files/products/pdf/grooved-tee-316.pdf","cad":"/files/products/cad/grooved-tee-316.dwg"},{"id":"HY-CPL-003","slug":"press-coupling-304","name":"304 不锈钢环压直接","category":"环压管件","material":"SUS304","size":"DN15-DN100","pressure":"PN25","connection":"环压连接","description":"双密封环压结构，安装效率高，适用于冷热水、压缩空气和洁净管路。","image":"/files/products/images/press-coupling-304.svg","pdf":"/files/products/pdf/press-coupling-304.pdf","cad":"/files/products/cad/press-coupling-304.dwg"},{"id":"HY-ELB-004","slug":"press-elbow-316l","name":"316L 不锈钢环压弯头","category":"环压管件","material":"SUS316L","size":"DN20-DN80","pressure":"PN25","connection":"环压连接","description":"低碳不锈钢材质，适合食品、制药和高洁净度流体输送场景。","image":"/files/products/images/press-elbow-316l.svg","pdf":"/files/products/pdf/press-elbow-316l.pdf","cad":"/files/products/cad/press-elbow-316l.dwg"},{"id":"FSQ-006","slug":"manifold-six-port","name":"不锈钢六路分水器","category":"分水器","material":"SUS304","size":"1寸主管 / 6 路","pressure":"PN10","connection":"螺纹连接","description":"用于地暖、净水和多支路供水系统，支路标识清晰，便于调试维护。","image":"/files/products/images/manifold-six-port.svg","pdf":"/files/products/pdf/manifold-six-port.pdf","cad":"/files/products/cad/manifold-six-port.dwg"},{"id":"FSQ-008","slug":"manifold-eight-port","name":"不锈钢八路分水器","category":"分水器","material":"SUS304","size":"1.5寸主管 / 8 路","pressure":"PN10","connection":"螺纹连接","description":"大流量多支路分配组件，适合商用建筑与设备配套系统。","image":"/files/products/images/manifold-eight-port.svg","pdf":"/files/products/pdf/manifold-eight-port.pdf","cad":"/files/products/cad/manifold-eight-port.dwg"},{"id":"PIPE-304-005","slug":"stainless-pipe-304","name":"304 薄壁不锈钢管","category":"不锈钢管","material":"SUS304","size":"DN15-DN200","pressure":"PN16-PN25","connection":"环压 / 焊接","description":"尺寸稳定、内壁光洁，适用于建筑给水、工业水和一般流体输送。","image":"/files/products/images/stainless-pipe-304.svg","pdf":"/files/products/pdf/stainless-pipe-304.pdf","cad":"/files/products/cad/stainless-pipe-304.dwg"},{"id":"PIPE-316L-007","slug":"stainless-pipe-316l","name":"316L 工业不锈钢管","category":"不锈钢管","material":"SUS316L","size":"DN25-DN300","pressure":"PN16-PN40","connection":"焊接 / 法兰","description":"耐腐蚀等级更高，适用于化工、海边工程和高要求工业流体系统。","image":"/files/products/images/stainless-pipe-316l.svg","pdf":"/files/products/pdf/stainless-pipe-316l.pdf","cad":"/files/products/cad/stainless-pipe-316l.dwg"},{"id":"FLG-PL-009","slug":"plate-flange-304","name":"304 不锈钢平焊法兰","category":"法兰","material":"SUS304","size":"DN25-DN250","pressure":"PN16","connection":"法兰连接","description":"通用平焊法兰，孔距标准，适合泵阀、设备口和管路端部连接。","image":"/files/products/images/plate-flange-304.svg","pdf":"/files/products/pdf/plate-flange-304.pdf","cad":"/files/products/cad/plate-flange-304.dwg"},{"id":"FLG-WN-010","slug":"welding-neck-flange-316","name":"316 不锈钢带颈对焊法兰","category":"法兰","material":"SUS316","size":"DN50-DN300","pressure":"PN25-PN40","connection":"对焊法兰","description":"适用于压力更高或温度波动明显的管路，连接强度和密封可靠性更好。","image":"/files/products/images/welding-neck-flange-316.svg","pdf":"/files/products/pdf/welding-neck-flange-316.pdf","cad":"/files/products/cad/welding-neck-flange-316.dwg"},{"id":"VAL-BV-011","slug":"stainless-ball-valve","name":"不锈钢二片式球阀","category":"阀门配件","material":"SUS304","size":"DN15-DN80","pressure":"PN16","connection":"螺纹连接","description":"启闭迅速、结构紧凑，适合设备配套、支路控制和一般工业管路。","image":"/files/products/images/stainless-ball-valve.svg","pdf":"/files/products/pdf/stainless-ball-valve.pdf","cad":"/files/products/cad/stainless-ball-valve.dwg"},{"id":"VAL-CHK-012","slug":"stainless-check-valve","name":"不锈钢止回阀","category":"阀门配件","material":"SUS304","size":"DN20-DN100","pressure":"PN16","connection":"内螺纹 / 法兰","description":"用于防止介质倒流，适配泵组出口、供水系统和设备保护回路。","image":"/files/products/images/stainless-check-valve.svg","pdf":"/files/products/pdf/stainless-check-valve.pdf","cad":"/files/products/cad/stainless-check-valve.dwg"}]</script>
+</body>
+</html>
