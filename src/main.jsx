@@ -8,12 +8,22 @@ const materials = [...new Set(products.map((product) => product.material))];
 const pressures = [...new Set(products.map((product) => product.pressure))];
 const connections = [...new Set(products.map((product) => product.connection))];
 const quoteKey = "frantaQuoteItems";
+const r2Image = (path) => `/files/products/images/${path}`;
+
+const categoryImages = {
+  "沟槽管件": r2Image("grooved/category-grooved-fittings.webp"),
+  "环压管件": r2Image("press/category-press-fittings.webp"),
+  "分水器": r2Image("manifold/category-manifold.webp"),
+  "不锈钢管": r2Image("pipe/category-stainless-pipe.webp"),
+  "法兰": r2Image("flange/category-flange.webp"),
+  "阀门配件": r2Image("flange/category-valve-accessories.webp")
+};
 
 const solutions = [
-  ["市政水务系统", "不锈钢管、法兰、阀门配件组合，适配泵房、管廊和二次供水。", "不锈钢管"],
-  ["消防与给排水", "沟槽管件快速连接，减少现场施工时间，便于后期维护。", "沟槽管件"],
-  ["商业建筑分区供水", "分水器与环压管件配套，适合多支路、紧凑空间和标准化安装。", "分水器"],
-  ["工业循环水管路", "按压力、材质和连接方式选型，支持资料下载与项目询价。", "环压管件"]
+  ["市政水务系统", "不锈钢管、法兰、阀门配件组合，适配泵房、管廊和二次供水。", "不锈钢管", r2Image("pipe/solution-municipal-water.webp")],
+  ["消防与给排水", "沟槽管件快速连接，减少现场施工时间，便于后期维护。", "沟槽管件", r2Image("grooved/solution-fire-water.webp")],
+  ["商业建筑分区供水", "分水器与环压管件配套，适合多支路、紧凑空间和标准化安装。", "分水器", r2Image("manifold/solution-commercial-water.webp")],
+  ["工业循环水管路", "按压力、材质和连接方式选型，支持资料下载与项目询价。", "环压管件", r2Image("press/solution-industrial-loop.webp")]
 ];
 
 const blogPosts = [
@@ -36,10 +46,10 @@ const advantages = [
 ];
 
 const projectCases = [
-  ["市政二次供水泵房", "不锈钢管 + 法兰 + 阀门配件", "按 PN16 管路统一资料交付，方便设备集成与后期维护。"],
-  ["商业综合体给水改造", "环压管件 + 304 薄壁不锈钢管", "减少现场焊接与停水时间，提高施工效率。"],
-  ["厂区循环水支路", "沟槽管件 + 分水器", "支路清晰、拆装方便，适合后续扩容。"],
-  ["净水设备成套配管", "分水器 + 环压管件", "小空间多支路安装，适配设备模块化交付。"]
+  ["市政二次供水泵房", "不锈钢管 + 法兰 + 阀门配件", "按 PN16 管路统一资料交付，方便设备集成与后期维护。", r2Image("pipe/case-municipal-pump-room.webp")],
+  ["商业综合体给水改造", "环压管件 + 304 薄壁不锈钢管", "减少现场焊接与停水时间，提高施工效率。", r2Image("press/case-commercial-retrofit.webp")],
+  ["厂区循环水支路", "沟槽管件 + 分水器", "支路清晰、拆装方便，适合后续扩容。", r2Image("grooved/case-industrial-loop.webp")],
+  ["净水设备成套配管", "分水器 + 环压管件", "小空间多支路安装，适配设备模块化交付。", r2Image("manifold/case-water-equipment.webp")]
 ];
 
 const downloadZones = [
@@ -132,15 +142,12 @@ function Link({ href, navigate, children, className }) {
   );
 }
 
-function productImageFallback(product) {
-  const label = `${product.category} ${product.material}`.replace(/[<>&]/g, "");
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="720" height="520" viewBox="0 0 720 520"><defs><linearGradient id="steel" x1="0" x2="1"><stop offset="0" stop-color="#cfd7df"/><stop offset=".48" stop-color="#ffffff"/><stop offset="1" stop-color="#8f9aa6"/></linearGradient></defs><rect width="720" height="520" fill="#f4f7f9"/><rect x="48" y="48" width="624" height="424" rx="10" fill="#fff" stroke="#d8e0e7"/><g fill="url(#steel)" stroke="#24313d" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"><path d="M150 290h185c40 0 72-32 72-72v-70h128"/><path d="M190 228h118M444 184h92"/></g><text x="58" y="432" fill="#24313d" font-family="Arial, sans-serif" font-size="28" font-weight="700">${label}</text><text x="58" y="466" fill="#5c6875" font-family="Arial, sans-serif" font-size="22">${product.id}</text></svg>`;
-  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+function ProductImage({ product, className = "" }) {
+  return <img className={className} src={product.image} alt={product.name} loading="lazy" />;
 }
 
-function ProductImage({ product, className = "" }) {
-  const [src, setSrc] = useState(product.image);
-  return <img className={className} src={src} alt={product.name} loading="lazy" onError={() => setSrc(productImageFallback(product))} />;
+function R2Image({ src, alt, className = "" }) {
+  return <img className={className} src={src} alt={alt} loading="lazy" />;
 }
 
 function Header({ active, navigate, quoteCount }) {
@@ -213,8 +220,7 @@ function Home({ addQuote, navigate }) {
       <SectionHead eyebrow="Product Range" title="产品分类" action={<Link className="text-button" href="/products/" navigate={navigate}>查看全部</Link>} />
       <section className="home-section home-category-grid">
         {categories.map((category) => {
-          const product = products.find((item) => item.category === category);
-          return <Link key={category} className="home-category-card" href={`/products/?category=${encodeURIComponent(category)}`} navigate={navigate}><ProductImage product={product} /><span>{products.filter((item) => item.category === category).length} 款</span><strong>{category}</strong></Link>;
+          return <Link key={category} className="home-category-card" href={`/products/?category=${encodeURIComponent(category)}`} navigate={navigate}><R2Image src={categoryImages[category]} alt={`${category} 分类图`} /><span>{products.filter((item) => item.category === category).length} 款</span><strong>{category}</strong></Link>;
         })}
       </section>
       <SectionHead eyebrow="Popular" title="热门产品" action={<Link className="text-button" href="/quote/" navigate={navigate}>查看询价单</Link>} />
@@ -227,14 +233,11 @@ function Home({ addQuote, navigate }) {
       </section>
       <SectionHead eyebrow="Solutions" title="应用行业" />
       <section className="home-section solution-grid">
-        {solutions.map(([title, text, category]) => {
-          const product = products.find((item) => item.category === category) || products[0];
-          return <Link key={title} className="solution-card visual-solution-card" href={`/products/?category=${encodeURIComponent(category)}`} navigate={navigate}><ProductImage product={product} /><span>{category}</span><h3>{title}</h3><p>{text}</p></Link>;
-        })}
+        {solutions.map(([title, text, category, image]) => <Link key={title} className="solution-card visual-solution-card" href={`/products/?category=${encodeURIComponent(category)}`} navigate={navigate}><R2Image src={image} alt={`${title} 应用行业图`} /><span>{category}</span><h3>{title}</h3><p>{text}</p></Link>)}
       </section>
       <SectionHead eyebrow="Water Projects" title="水务项目案例" />
       <section className="home-section project-case-grid">
-        {projectCases.map(([title, productText, result]) => <article className="project-case-card" key={title}><h3>{title}</h3><strong>{productText}</strong><p>{result}</p></article>)}
+        {projectCases.map(([title, productText, result, image]) => <article className="project-case-card" key={title}><R2Image src={image} alt={`${title} 案例图`} /><h3>{title}</h3><strong>{productText}</strong><p>{result}</p></article>)}
       </section>
       <SectionHead eyebrow="Downloads" title="资料下载专区" action={<Link className="text-button" href="/downloads/" navigate={navigate}>进入下载中心</Link>} />
       <section className="home-section download-zone-grid">

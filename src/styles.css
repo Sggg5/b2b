@@ -565,6 +565,15 @@ img {
   padding: 16px;
 }
 
+.project-case-card img {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
 .project-case-card h3 {
   margin: 0;
   color: var(--header);
