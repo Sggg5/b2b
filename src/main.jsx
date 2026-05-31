@@ -251,7 +251,6 @@ function Products({ addQuote, navigate }) {
   const [pressure, setPressure] = useState("全部");
   const [connection, setConnection] = useState("全部");
   const [keyword, setKeyword] = useState(params.get("q") || "");
-  const [view, setView] = useState("table");
 
   const filtered = useMemo(() => products.filter((product) => {
     const matchKeyword = `${product.name}${product.id}${product.description}`.toLowerCase().includes(keyword.toLowerCase());
@@ -263,26 +262,110 @@ function Products({ addQuote, navigate }) {
   }), [category, material, pressure, connection, keyword]);
 
   return (
-    <>
-      <PageHead eyebrow="Products" title="产品中心" text="按分类、材质、压力等级和连接方式快速筛选产品，支持 CAD/PDF 下载与加入询价单。" />
-      <section className="product-shell">
-        <aside className="filters">
-          <h2>筛选条件</h2>
-          <FilterPills title="分类" options={["全部", ...categories]} value={category} setValue={setCategory} />
-          <FilterPills title="材质" options={["全部", ...materials]} value={material} setValue={setMaterial} />
-          <FilterPills title="压力等级" options={["全部", ...pressures]} value={pressure} setValue={setPressure} />
-          <FilterPills title="连接方式" options={["全部", ...connections]} value={connection} setValue={setConnection} />
-        </aside>
-        <div className="product-main">
-          <div className="product-toolbar">
-            <label>关键词<input value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="产品名 / 型号 / 描述" /></label>
-            <div className="segmented"><button className={view === "table" ? "active" : ""} onClick={() => setView("table")}>表格</button><button className={view === "card" ? "active" : ""} onClick={() => setView("card")}>卡片</button></div>
+    <div className="catalog-page">
+      <section className="catalog-hero">
+        <div>
+          <h1>产品中心</h1>
+          <p>高品质不锈钢管件，支持多种连接方式与规格。</p>
+          <div className="catalog-hero-points">
+            <span>304/316L 优质材料</span>
+            <span>精密制造</span>
+            <span>全规格可选</span>
+            <span>支持 CAD/PDF 下载</span>
           </div>
-          {view === "table" ? <ProductTable products={filtered} addQuote={addQuote} navigate={navigate} /> : <div className="product-grid">{filtered.map((product) => <ProductCard key={product.slug} product={product} addQuote={addQuote} navigate={navigate} />)}</div>}
         </div>
-        <aside className="quote-basket"><h2>询价篮</h2><p>在产品列表中点击“加入询价单”，统一提交工程需求。</p><Link className="button full" href="/quote/" navigate={navigate}>查看询价单</Link></aside>
+        <div className="catalog-hero-media">
+          <ProductImage product={products.find((item) => item.slug === "grooved-tee") || products[0]} />
+        </div>
       </section>
-    </>
+      <section className="catalog-layout-v2">
+        <aside className="catalog-filters">
+          <div className="filter-title">
+            <h2>筛选条件</h2>
+            <button onClick={() => { setCategory("全部"); setMaterial("全部"); setPressure("全部"); setConnection("全部"); setKeyword(""); }}>清空筛选</button>
+          </div>
+          <CatalogFilterList title="分类" options={["全部", ...categories]} value={category} setValue={setCategory} />
+          <CatalogFilterList title="材质" options={["全部", ...materials]} value={material} setValue={setMaterial} />
+          <CatalogFilterList title="压力等级" options={["全部", ...pressures]} value={pressure} setValue={setPressure} />
+          <CatalogFilterList title="连接方式" options={["全部", ...connections]} value={connection} setValue={setConnection} />
+        </aside>
+        <div className="catalog-results">
+          <div className="catalog-search-row">
+            <label>
+              <span>⌕</span>
+              <input value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="搜索产品名称、型号或关键词，如：DN100 沟槽三通" />
+            </label>
+            <button>默认排序</button>
+          </div>
+          <CategoryStrip active={category} setActive={setCategory} />
+          <div className="catalog-card-grid">
+            {filtered.map((product) => <CatalogProductCard key={product.slug} product={product} addQuote={addQuote} navigate={navigate} />)}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function CatalogFilterList({ title, options, value, setValue }) {
+  return (
+    <section className="catalog-filter-group">
+      <h3>{title}<span>⌃</span></h3>
+      <div>
+        {options.map((option) => (
+          <button key={option} className={value === option ? "active" : ""} onClick={() => setValue(option)}>
+            <span />
+            <em>{option}</em>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CategoryStrip({ active, setActive }) {
+  const items = ["全部", ...categories];
+  return (
+    <div className="category-strip">
+      {items.map((category) => {
+        const product = category === "全部" ? products[0] : products.find((item) => item.category === category);
+        const label = category === "全部" ? "全部产品" : (categoryMeta[category]?.[0] || category);
+        const count = category === "全部" ? products.length : products.filter((item) => item.category === category).length;
+        return (
+          <button key={category} className={active === category ? "active" : ""} onClick={() => setActive(category)}>
+            {product ? <ProductImage product={product} /> : null}
+            <strong>{label}</strong>
+            <small>{count} 个产品</small>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function CatalogProductCard({ product, addQuote, navigate }) {
+  return (
+    <article className="catalog-product-card">
+      <button className="favorite-button" aria-label="收藏">♡</button>
+      <Link className="catalog-product-image" href={`/products/${product.slug}/`} navigate={navigate}>
+        <ProductImage product={product} />
+      </Link>
+      <div className="catalog-product-copy">
+        <h3><Link href={`/products/${product.slug}/`} navigate={navigate}>{product.name}</Link></h3>
+        <span>{product.id}</span>
+        <dl>
+          <div><dt>材质：</dt><dd>{product.material}</dd></div>
+          <div><dt>规格：</dt><dd>{product.size}</dd></div>
+          <div><dt>压力：</dt><dd>{product.pressure}</dd></div>
+          <div><dt>连接：</dt><dd>{product.connection}</dd></div>
+        </dl>
+      </div>
+      <div className="catalog-product-actions">
+        <Link href={`/products/${product.slug}/`} navigate={navigate}>查看详情</Link>
+        <a href={product.cad}>下载CAD</a>
+        <button onClick={() => addQuote(product.slug)}>加入询价</button>
+      </div>
+    </article>
   );
 }
 
@@ -325,7 +408,74 @@ function SpecTable({ product }) {
 }
 
 function Downloads() {
-  return <><PageHead eyebrow="Downloads" title="下载中心" text="产品资料、CAD 图纸、PDF 样本与安装说明统一归档。" /><section className="downloads-grid"><DownloadColumn title="产品资料" items={products.slice(0, 8)} field="pdf" /><DownloadColumn title="CAD 图纸" items={products.slice(8, 16)} field="cad" /><DownloadColumn title="安装说明" items={products.slice(16, 24)} field="pdf" /></section></>;
+  const featured = [
+    ["沟槽系统产品手册", "2025 版", "PDF · 8.2 MB", products.find((item) => item.slug === "grooved-tee") || products[0]],
+    ["双卡压安装手册", "2025 版", "PDF · 5.6 MB", products.find((item) => item.slug === "double-press-tee") || products[1]],
+    ["不锈钢管道设计规范", "2024 版", "PDF · 3.1 MB", products.find((item) => item.slug === "stainless-water-pipe") || products[2]],
+    ["分水器系统选型指南", "2025 版", "PDF · 4.7 MB", products.find((item) => item.slug === "double-press-pipe-bridge") || products[3]],
+    ["法兰连接技术手册", "2024 版", "PDF · 2.9 MB", products.find((item) => item.slug === "grooved-flange-adapter") || products[4]],
+    ["保温管系统技术资料", "2025 版", "PDF · 6.3 MB", products.find((item) => item.slug === "stainless-insulated-pipe") || products[5]]
+  ];
+  const types = [
+    ["产品手册", "86", "份资料", "PDF"],
+    ["CAD 图纸", "128", "份资料", "CAD"],
+    ["3D 模型", "52", "份资料", "STEP"],
+    ["安装说明", "64", "份资料", "DOC"],
+    ["检测报告", "35", "份资料", "TEST"]
+  ];
+  const latest = [
+    ["不锈钢管道焊接工艺指南.pdf", "PDF", "技术规范", "2025-05", "4.3 MB", "2025-05-20"],
+    ["沟槽异径三通 CAD 图纸.dwg", "CAD", "沟槽管件", "V1.0", "1.8 MB", "2025-05-18"],
+    ["双卡压等径接头 STEP 模型.step", "STEP", "双卡压管件", "V1.0", "2.6 MB", "2025-05-16"],
+    ["双卡压安装操作说明.pdf", "PDF", "安装说明", "2025-04", "3.2 MB", "2025-05-15"],
+    ["法兰连接尺寸标准截面表.pdf", "PDF", "技术规范", "2025-04", "2.1 MB", "2025-05-12"]
+  ];
+
+  return (
+    <div className="download-page">
+      <section className="download-hero">
+        <div>
+          <p className="eyebrow">DOWNLOAD CENTER</p>
+          <h1>下载中心</h1>
+          <p>产品资料、CAD 图纸、PDF 样本与安装说明统一归档，支持在线预览与下载。</p>
+          <div className="download-hero-points"><span>资料全面</span><span>免费下载</span><span>持续更新</span><span>安全可靠</span></div>
+        </div>
+        <ProductImage product={products.find((item) => item.slug === "grooved-tee") || products[0]} />
+      </section>
+      <section className="download-type-grid">
+        {types.map(([title, count, unit, icon]) => <article key={title}><span>{icon}</span><div><strong>{title}</strong><b>{count}</b><small>{unit}</small></div><a href="#download-search">查看全部 →</a></article>)}
+      </section>
+      <section className="download-block">
+        <div className="download-block-head"><h2>热门下载</h2><a href="#latest-downloads">查看全部 →</a></div>
+        <div className="download-card-grid">
+          {featured.map(([title, version, meta, product]) => <article className="download-file-card" key={title}><ProductImage product={product} /><span>PDF</span><h3>{title}</h3><p>{version}</p><small>{meta}</small><a className="button" href={product.pdf}>下载</a></article>)}
+        </div>
+      </section>
+      <section className="download-search-panel" id="download-search">
+        <h2>搜索资料</h2>
+        <div><input placeholder="输入产品名称、型号、规格，如：DN100 沟槽三通、90°弯头" /><button className="button">搜索</button></div>
+        <p>热门搜索：<span>DN100</span><span>沟槽三通</span><span>90°弯头</span><span>法兰</span><span>DN150</span><span>分水器</span><span>双卡压接头</span></p>
+      </section>
+      <section className="download-block">
+        <div className="download-block-head"><h2>按产品分类浏览</h2></div>
+        <div className="download-category-grid">
+          {categories.slice(0, 6).map((category) => {
+            const product = products.find((item) => item.category === category) || products[0];
+            return <article key={category}><ProductImage product={product} /><h3>{categoryMeta[category]?.[0] || category}</h3><p>{products.filter((item) => item.category === category).length} 份资料</p><a href="#latest-downloads">查看 →</a></article>;
+          })}
+        </div>
+      </section>
+      <section className="download-block" id="latest-downloads">
+        <div className="download-block-head"><h2>最新上传</h2><a href="#download-search">查看全部 →</a></div>
+        <div className="latest-download-table">
+          <table>
+            <thead><tr><th>文件名称</th><th>类型</th><th>所属分类</th><th>版本</th><th>大小</th><th>上传时间</th><th>操作</th></tr></thead>
+            <tbody>{latest.map((row) => <tr key={row[0]}><td>{row[0]}</td><td><span>{row[1]}</span></td><td>{row[2]}</td><td>{row[3]}</td><td>{row[4]}</td><td>{row[5]}</td><td><a href={products[0].pdf}>下载 ↗</a></td></tr>)}</tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
 }
 
 function DownloadColumn({ title, items, field }) {
