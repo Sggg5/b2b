@@ -223,35 +223,22 @@ function Home({ addQuote, navigate }) {
           return <Link key={category} className="home-category-card" href={`/products/?category=${encodeURIComponent(category)}`} navigate={navigate}><R2Image src={categoryImages[category]} alt={`${category} 分类图`} /><span>{products.filter((item) => item.category === category).length} 款</span><strong>{category}</strong></Link>;
         })}
       </section>
-      <SectionHead eyebrow="Popular" title="热门产品" action={<Link className="text-button" href="/quote/" navigate={navigate}>查看询价单</Link>} />
-      <section className="home-section hot-product-grid">
-        {products.slice(2, 8).map((product) => <HotProduct key={product.slug} product={product} addQuote={addQuote} navigate={navigate} />)}
-      </section>
-      <SectionHead eyebrow="Why Franta" title="为什么选择 Franta" />
-      <section className="home-section why-franta-grid">
-        {advantages.map(([title, text]) => <article key={title}><span>0{advantages.findIndex(([item]) => item === title) + 1}</span><strong>{title}</strong><p>{text}</p></article>)}
-      </section>
-      <SectionHead eyebrow="Solutions" title="应用行业" />
-      <section className="home-section solution-grid">
-        {solutions.map(([title, text, category, image]) => <Link key={title} className="solution-card visual-solution-card" href={`/products/?category=${encodeURIComponent(category)}`} navigate={navigate}><R2Image src={image} alt={`${title} 应用行业图`} /><span>{category}</span><h3>{title}</h3><p>{text}</p></Link>)}
+      <section className="home-section ai-selector">
+        <div><p className="eyebrow">AI Selection</p><h2>{"AI \u9009\u578b"}</h2><p>{"按应用场景、管径、压力、材质和连接方式，快速缩小产品范围，进入产品中心完成询价。"}</p></div>
+        <div className="ai-selector-actions">
+          <button type="button" onClick={() => navigate("/products/")}>{"产品筛选"}</button>
+          <button type="button" onClick={() => navigate("/downloads/")}>{"图纸资料"}</button>
+          <button type="button" onClick={() => navigate("/quote/")}>{"人工询价"}</button>
+        </div>
       </section>
       <SectionHead eyebrow="Water Projects" title="水务项目案例" />
       <section className="home-section project-case-grid">
         {projectCases.map(([title, productText, result, image]) => <article className="project-case-card" key={title}><R2Image src={image} alt={`${title} 案例图`} /><h3>{title}</h3><strong>{productText}</strong><p>{result}</p></article>)}
       </section>
-      <SectionHead eyebrow="Downloads" title="资料下载专区" action={<Link className="text-button" href="/downloads/" navigate={navigate}>进入下载中心</Link>} />
-      <section className="home-section download-zone-grid">
-        {downloadZones.map(([title, text, href]) => <Link className="download-zone-card" href={href} navigate={navigate} key={title}><strong>{title}</strong><p>{text}</p><span>查看资料</span></Link>)}
-      </section>
-      <section className="home-section ai-selector">
-        <div><p className="eyebrow">AI Selection</p><h2>AI 选型入口预留</h2><p>后续可输入介质、压力、管径、连接方式和应用场景，自动推荐产品组合与资料包。</p></div>
-        <button className="button ghost" type="button" disabled>即将开放</button>
-      </section>
       <section className="home-section split-home-section">
         <div className="section-heading"><p className="eyebrow">Technical Blog</p><h2>新闻 / 技术博客</h2><p>围绕选型、施工、资料交付和水务系统应用持续沉淀技术内容。</p></div>
         <div className="article-list">{blogPosts.map(([title, text]) => <article key={title}><span>选型指南</span><h3>{title}</h3><p>{text}</p></article>)}</div>
       </section>
-      <section className="home-section contact-cta"><div><p className="eyebrow">Inquiry</p><h2>准备开始项目询价？</h2><p>选择产品加入询价单，补充工况、数量和交期，我们可以继续接入 Pages Functions + D1 保存线索。</p></div><Link className="button large" href="/quote/" navigate={navigate}>进入询价单</Link></section>
     </>
   );
 }
