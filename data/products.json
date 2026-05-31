@@ -961,7 +961,7 @@
     "pressure": "PN16-PN25",
     "connection": "管材",
     "description": "不锈钢水管，源自产品样本识别，适用于工业与水务管路系统选型。",
-    "image": "/files/products/images/catalog/stainless-water-pipe.png",
+    "image": "/images/generated/stainless-water-pipe.png",
     "pdf": "/files/products/pdf/stainless-water-pipe.pdf",
     "cad": "/files/products/cad/stainless-water-pipe.dwg"
   },
@@ -975,7 +975,7 @@
     "pressure": "PN16-PN25",
     "connection": "管材",
     "description": "不锈钢保温管，源自产品样本识别，适用于工业与水务管路系统选型。",
-    "image": "/files/products/images/catalog/stainless-insulated-pipe.png",
+    "image": "/images/generated/stainless-insulated-pipe.png",
     "pdf": "/files/products/pdf/stainless-insulated-pipe.pdf",
     "cad": "/files/products/cad/stainless-insulated-pipe.dwg"
   },
@@ -989,7 +989,7 @@
     "pressure": "PN16-PN25",
     "connection": "管材",
     "description": "不锈钢覆塑管，源自产品样本识别，适用于工业与水务管路系统选型。",
-    "image": "/files/products/images/catalog/stainless-coated-pipe.png",
+    "image": "/images/generated/stainless-coated-pipe.png",
     "pdf": "/files/products/pdf/stainless-coated-pipe.pdf",
     "cad": "/files/products/cad/stainless-coated-pipe.dwg"
   }
