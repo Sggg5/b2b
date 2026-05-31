@@ -3,6 +3,12 @@ import { createRoot } from "react-dom/client";
 import products from "../data/products.json";
 import "./styles.css";
 
+const redirectedPath = sessionStorage.getItem("frantaSpaRedirect");
+if (redirectedPath) {
+  sessionStorage.removeItem("frantaSpaRedirect");
+  window.history.replaceState(null, "", redirectedPath);
+}
+
 const categories = [...new Set(products.map((product) => product.category))];
 const materials = [...new Set(products.map((product) => product.material))];
 const pressures = [...new Set(products.map((product) => product.pressure))];
@@ -491,7 +497,44 @@ function PageHead({ eyebrow, title, text }) {
 }
 
 function Footer({ navigate }) {
-  return <footer className="site-footer pro-footer"><div><strong>Franta B2B</strong><p>Cloudflare Pages + Functions + R2 + D1 架构的轻量工业 B2B 官网。</p></div><nav><Link href="/products/" navigate={navigate}>产品中心</Link><Link href="/downloads/" navigate={navigate}>下载中心</Link><Link href="/downloads/" navigate={navigate}>技术支持</Link><Link href="/quote/" navigate={navigate}>联系我们</Link></nav><small>© 2024 Franta. All rights reserved.</small></footer>;
+  return (
+    <footer className="site-footer pro-footer">
+      <div className="footer-brand">
+        <strong>Franta B2B</strong>
+        <p>不锈钢管件专家 | 304/316L 优质材料 | 精密制造</p>
+        <small>© 2024 Franta. All rights reserved.</small>
+      </div>
+      <div className="footer-column">
+        <strong>产品中心</strong>
+        <Link href="/products/" navigate={navigate}>沟槽管件系统</Link>
+        <Link href="/products/" navigate={navigate}>双卡压管件系统</Link>
+        <Link href="/products/" navigate={navigate}>单卡压管件系统</Link>
+        <Link href="/products/" navigate={navigate}>分水器系统</Link>
+        <Link href="/products/" navigate={navigate}>法兰系统</Link>
+      </div>
+      <div className="footer-column">
+        <strong>下载中心</strong>
+        <Link href="/downloads/" navigate={navigate}>产品手册</Link>
+        <Link href="/downloads/" navigate={navigate}>CAD 图纸</Link>
+        <Link href="/downloads/" navigate={navigate}>3D 模型</Link>
+        <Link href="/downloads/" navigate={navigate}>安装说明</Link>
+        <Link href="/downloads/" navigate={navigate}>检测报告</Link>
+      </div>
+      <div className="footer-column">
+        <strong>技术支持</strong>
+        <Link href="/downloads/" navigate={navigate}>技术文档</Link>
+        <Link href="/downloads/" navigate={navigate}>常见问题</Link>
+        <Link href="/downloads/" navigate={navigate}>视频教程</Link>
+        <Link href="/products/" navigate={navigate}>选型工具</Link>
+        <Link href="/quote/" navigate={navigate}>联系我们</Link>
+      </div>
+      <div className="footer-contact">
+        <a href="tel:4000000000">400-xxx-xxxx</a>
+        <a href="mailto:info@franta.com">info@franta.com</a>
+        <Link className="button" href="/quote/" navigate={navigate}>联系我们</Link>
+      </div>
+    </footer>
+  );
 }
 
 createRoot(document.getElementById("root")).render(<App />);
