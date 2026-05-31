@@ -6,6 +6,7 @@ import "./styles.css";
 const categories = ["沟槽管件", "环压管件", "分水器", "不锈钢管", "法兰", "阀门配件"];
 const materials = [...new Set(products.map((product) => product.material))];
 const pressures = [...new Set(products.map((product) => product.pressure))];
+const connections = [...new Set(products.map((product) => product.connection))];
 const quoteKey = "frantaQuoteItems";
 
 const solutions = [
@@ -131,6 +132,17 @@ function Link({ href, navigate, children, className }) {
   );
 }
 
+function productImageFallback(product) {
+  const label = `${product.category} ${product.material}`.replace(/[<>&]/g, "");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="720" height="520" viewBox="0 0 720 520"><defs><linearGradient id="steel" x1="0" x2="1"><stop offset="0" stop-color="#cfd7df"/><stop offset=".48" stop-color="#ffffff"/><stop offset="1" stop-color="#8f9aa6"/></linearGradient></defs><rect width="720" height="520" fill="#f4f7f9"/><rect x="48" y="48" width="624" height="424" rx="10" fill="#fff" stroke="#d8e0e7"/><g fill="url(#steel)" stroke="#24313d" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"><path d="M150 290h185c40 0 72-32 72-72v-70h128"/><path d="M190 228h118M444 184h92"/></g><text x="58" y="432" fill="#24313d" font-family="Arial, sans-serif" font-size="28" font-weight="700">${label}</text><text x="58" y="466" fill="#5c6875" font-family="Arial, sans-serif" font-size="22">${product.id}</text></svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+function ProductImage({ product, className = "" }) {
+  const [src, setSrc] = useState(product.image);
+  return <img className={className} src={src} alt={product.name} loading="lazy" onError={() => setSrc(productImageFallback(product))} />;
+}
+
 function Header({ active, navigate, quoteCount }) {
   const nav = [["首页", "/"], ["产品中心", "/products/"], ["下载中心", "/downloads/"], ["询价单", "/quote/"]];
   return (
@@ -186,7 +198,7 @@ function Home({ addQuote, navigate }) {
         </div>
         <div className="hero-visual">
           <div className="hero-visual-main">
-            <img src={heroProduct.image} alt={heroProduct.name} />
+            <ProductImage product={heroProduct} />
             <div>
               <span>{heroProduct.category} · {heroProduct.id}</span>
               <strong>{heroProduct.name}</strong>
@@ -202,7 +214,7 @@ function Home({ addQuote, navigate }) {
       <section className="home-section home-category-grid">
         {categories.map((category) => {
           const product = products.find((item) => item.category === category);
-          return <Link key={category} className="home-category-card" href={`/products/?category=${encodeURIComponent(category)}`} navigate={navigate}><img src={product.image} alt={category} /><span>{products.filter((item) => item.category === category).length} 款</span><strong>{category}</strong></Link>;
+          return <Link key={category} className="home-category-card" href={`/products/?category=${encodeURIComponent(category)}`} navigate={navigate}><ProductImage product={product} /><span>{products.filter((item) => item.category === category).length} 款</span><strong>{category}</strong></Link>;
         })}
       </section>
       <SectionHead eyebrow="Popular" title="热门产品" action={<Link className="text-button" href="/quote/" navigate={navigate}>查看询价单</Link>} />
@@ -215,7 +227,10 @@ function Home({ addQuote, navigate }) {
       </section>
       <SectionHead eyebrow="Solutions" title="应用行业" />
       <section className="home-section solution-grid">
-        {solutions.map(([title, text, category]) => <Link key={title} className="solution-card" href={`/products/?category=${encodeURIComponent(category)}`} navigate={navigate}><span>{category}</span><h3>{title}</h3><p>{text}</p></Link>)}
+        {solutions.map(([title, text, category]) => {
+          const product = products.find((item) => item.category === category) || products[0];
+          return <Link key={title} className="solution-card visual-solution-card" href={`/products/?category=${encodeURIComponent(category)}`} navigate={navigate}><ProductImage product={product} /><span>{category}</span><h3>{title}</h3><p>{text}</p></Link>;
+        })}
       </section>
       <SectionHead eyebrow="Water Projects" title="水务项目案例" />
       <section className="home-section project-case-grid">
@@ -243,11 +258,11 @@ function SectionHead({ eyebrow, title, action }) {
 }
 
 function ProductMini({ product, navigate }) {
-  return <Link className="home-product-mini" href={`/products/${product.slug}/`} navigate={navigate}><img src={product.image} alt={product.name} /><span>{product.category}</span><strong>{product.name}</strong></Link>;
+  return <Link className="home-product-mini" href={`/products/${product.slug}/`} navigate={navigate}><ProductImage product={product} /><span>{product.category}</span><strong>{product.name}</strong></Link>;
 }
 
 function HotProduct({ product, addQuote, navigate }) {
-  return <article className="hot-product-card"><Link className="hot-product-image" href={`/products/${product.slug}/`} navigate={navigate}><img src={product.image} alt={product.name} /></Link><div><span>{product.id}</span><h3><Link href={`/products/${product.slug}/`} navigate={navigate}>{product.name}</Link></h3><p>{product.material} · {product.size} · {product.pressure}</p></div><button className="button small" onClick={() => addQuote(product.slug)}>加入询价</button></article>;
+  return <article className="hot-product-card"><Link className="hot-product-image" href={`/products/${product.slug}/`} navigate={navigate}><ProductImage product={product} /></Link><div><span>{product.id}</span><h3><Link href={`/products/${product.slug}/`} navigate={navigate}>{product.name}</Link></h3><p>{product.material} · {product.size} · {product.pressure}</p></div><button className="button small" onClick={() => addQuote(product.slug)}>加入询价</button></article>;
 }
 
 function Products({ addQuote, removeQuote, selectedProducts, navigate }) {
@@ -255,33 +270,38 @@ function Products({ addQuote, removeQuote, selectedProducts, navigate }) {
   const [category, setCategory] = useState(search.get("category") || "");
   const [material, setMaterial] = useState("");
   const [pressure, setPressure] = useState("");
+  const [connection, setConnection] = useState("");
   const [keyword, setKeyword] = useState(search.get("q") || "");
-  const [view, setView] = useState("card");
+  const [view, setView] = useState("table");
   const filtered = useMemo(() => products.filter((product) =>
     (!category || product.category === category) &&
     (!material || product.material === material) &&
     (!pressure || product.pressure === pressure) &&
+    (!connection || product.connection === connection) &&
     (!keyword || `${product.name} ${product.id} ${product.description}`.toLowerCase().includes(keyword.toLowerCase()))
-  ), [category, material, pressure, keyword]);
+  ), [category, material, pressure, connection, keyword]);
 
   return (
     <>
       <PageHead eyebrow="Products" title="产品中心" text="分类筛选、参数筛选、卡片/列表切换和产品详情页，面向工业采购选型。" />
       <section className="catalog-layout">
         <aside className="filters">
-          <div className="filter-title">分类筛选</div>
+          <div className="filter-title">分类</div>
           <div className="category-list"><button className={!category ? "category-chip active" : "category-chip"} onClick={() => setCategory("")}>全部产品<span>{products.length}</span></button>{categories.map((item) => <button key={item} className={category === item ? "category-chip active" : "category-chip"} onClick={() => setCategory(item)}>{item}<span>{products.filter((product) => product.category === item).length}</span></button>)}</div>
-          <div className="filter-title sub">参数筛选</div>
+          <div className="filter-title sub">材质</div>
+          <div className="filter-pill-list"><button className={!material ? "active" : ""} onClick={() => setMaterial("")}>全部</button>{materials.map((item) => <button key={item} className={material === item ? "active" : ""} onClick={() => setMaterial(item)}>{item}</button>)}</div>
+          <div className="filter-title sub">压力等级</div>
+          <div className="filter-pill-list"><button className={!pressure ? "active" : ""} onClick={() => setPressure("")}>全部</button>{pressures.map((item) => <button key={item} className={pressure === item ? "active" : ""} onClick={() => setPressure(item)}>{item}</button>)}</div>
+          <div className="filter-title sub">连接方式</div>
+          <div className="filter-pill-list"><button className={!connection ? "active" : ""} onClick={() => setConnection("")}>全部</button>{connections.map((item) => <button key={item} className={connection === item ? "active" : ""} onClick={() => setConnection(item)}>{item}</button>)}</div>
+          <div className="filter-title sub">关键词</div>
           <label>关键词<input value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="产品名 / 型号 / 描述" /></label>
-          <label>材质<select value={material} onChange={(event) => setMaterial(event.target.value)}><option value="">全部材质</option>{materials.map((item) => <option key={item}>{item}</option>)}</select></label>
-          <label>压力<select value={pressure} onChange={(event) => setPressure(event.target.value)}><option value="">全部压力</option>{pressures.map((item) => <option key={item}>{item}</option>)}</select></label>
-          <button className="button ghost full" onClick={() => { setCategory(""); setMaterial(""); setPressure(""); setKeyword(""); }}>重置筛选</button>
+          <button className="button ghost full" onClick={() => { setCategory(""); setMaterial(""); setPressure(""); setConnection(""); setKeyword(""); }}>重置筛选</button>
         </aside>
         <div className="catalog-main">
           <div className="toolbar"><strong>{filtered.length} 个产品</strong><div className="segmented"><button className={view === "card" ? "active" : ""} onClick={() => setView("card")}>卡片</button><button className={view === "list" ? "active" : ""} onClick={() => setView("list")}>列表</button><button className={view === "table" ? "active" : ""} onClick={() => setView("table")}>表格</button></div></div>
           {view === "table" ? <ProductTable products={filtered} addQuote={addQuote} navigate={navigate} /> : <div className={view === "card" ? "product-grid" : "product-grid list-view"}>{filtered.map((product) => <ProductCard key={product.slug} product={product} addQuote={addQuote} navigate={navigate} />)}</div>}
         </div>
-        <QuoteRail selectedProducts={selectedProducts} removeQuote={removeQuote} navigate={navigate} />
       </section>
     </>
   );
@@ -291,7 +311,7 @@ function ProductTable({ products: rows, addQuote, navigate }) {
   return (
     <div className="product-table-wrap">
       <table className="product-table">
-        <thead><tr><th>产品</th><th>分类</th><th>材质</th><th>规格</th><th>压力</th><th>连接</th><th>操作</th></tr></thead>
+        <thead><tr><th>产品</th><th>分类</th><th>材质</th><th>规格</th><th>压力</th><th>连接</th><th>CAD</th><th>PDF</th><th>询价</th></tr></thead>
         <tbody>
           {rows.map((product) => (
             <tr key={product.slug}>
@@ -301,6 +321,8 @@ function ProductTable({ products: rows, addQuote, navigate }) {
               <td>{product.size}</td>
               <td>{product.pressure}</td>
               <td>{product.connection}</td>
+              <td><a className="text-button" href={product.cad}>CAD</a></td>
+              <td><a className="text-button" href={product.pdf}>PDF</a></td>
               <td><button className="button small" onClick={() => addQuote(product.slug)}>询价</button></td>
             </tr>
           ))}
@@ -311,14 +333,14 @@ function ProductTable({ products: rows, addQuote, navigate }) {
 }
 
 function ProductCard({ product, addQuote, navigate }) {
-  return <article className="product-card"><Link className="product-image" href={`/products/${product.slug}/`} navigate={navigate}><img src={product.image} alt={product.name} loading="lazy" /></Link><div className="product-content"><div className="product-title-row"><div><div className="eyebrow">{product.category} · {product.id}</div><h3><Link href={`/products/${product.slug}/`} navigate={navigate}>{product.name}</Link></h3></div><span className="stock-badge">可询价</span></div><p>{product.description}</p><SpecTable product={product} compact /><div className="card-actions"><Link className="button ghost" href={`/products/${product.slug}/`} navigate={navigate}>查看详情</Link><button className="button" onClick={() => addQuote(product.slug)}>加入询价单</button></div></div></article>;
+  return <article className="product-card"><Link className="product-image" href={`/products/${product.slug}/`} navigate={navigate}><ProductImage product={product} /></Link><div className="product-content"><div className="product-title-row"><div><div className="eyebrow">{product.category} · {product.id}</div><h3><Link href={`/products/${product.slug}/`} navigate={navigate}>{product.name}</Link></h3></div><span className="stock-badge">可询价</span></div><p>{product.description}</p><SpecTable product={product} compact /><div className="card-actions"><Link className="button ghost" href={`/products/${product.slug}/`} navigate={navigate}>查看详情</Link><a className="button ghost" href={product.cad}>CAD</a><a className="button ghost" href={product.pdf}>PDF</a><button className="button" onClick={() => addQuote(product.slug)}>加入询价单</button></div></div></article>;
 }
 
 function ProductDetail({ product, addQuote, navigate }) {
   const related = [...products.filter((item) => item.slug !== product.slug && item.category === product.category), ...products.filter((item) => item.slug !== product.slug && item.category !== product.category)].slice(0, 3);
   return (
     <>
-      <section className="detail-layout"><div className="detail-media"><img src={product.image} alt={product.name} /></div><div className="detail-copy"><p className="eyebrow">{product.category} · {product.id}</p><h1>{product.name}</h1><p>{product.description}</p><section className="detail-panel"><h2>核心参数</h2><SpecTable product={product} detail /></section><div className="detail-actions"><button className="button large" onClick={() => addQuote(product.slug)}>加入询价单</button><a className="button ghost large" href={product.pdf}>PDF 样本</a><a className="button ghost large" href={product.cad}>CAD 图纸</a></div></div></section>
+      <section className="detail-layout"><div className="detail-media"><ProductImage product={product} /></div><div className="detail-copy"><p className="eyebrow">{product.category} · {product.id}</p><h1>{product.name}</h1><p>{product.description}</p><section className="detail-panel"><h2>核心参数</h2><SpecTable product={product} detail /></section><div className="detail-actions"><button className="button large" onClick={() => addQuote(product.slug)}>加入询价单</button><a className="button ghost large" href={product.pdf}>PDF 样本</a><a className="button ghost large" href={product.cad}>CAD 图纸</a></div></div></section>
       <section className="section two-column-section"><div className="detail-panel"><p className="eyebrow">Downloads</p><h2>下载资料</h2><div className="download-list"><a href={product.pdf}><strong>PDF 产品样本</strong><span>规格、材质、安装说明</span></a><a href={product.cad}><strong>CAD 图纸</strong><span>用于项目选型和工程配套</span></a></div></div><div className="detail-panel"><p className="eyebrow">Related</p><h2>相关产品</h2><div className="related-list">{related.map((item) => <Link key={item.slug} href={`/products/${item.slug}/`} navigate={navigate}><span>{item.category}</span><strong>{item.name}</strong><small>{item.material} · {item.size}</small></Link>)}</div></div></section>
     </>
   );
@@ -337,7 +359,7 @@ function DownloadColumn({ title, items, field }) {
 }
 
 function Quote({ selectedProducts, removeQuote, clearQuote }) {
-  return <><PageHead eyebrow="Quote" title="询价单" text="本页只收集询价意向，不接支付、不做会员系统。后续可用 Pages Functions + D1 保存询价。" /><section className="quote-layout"><div><div className="toolbar"><strong>已选产品</strong><button className="text-button" onClick={clearQuote}>清空</button></div><div className="quote-items">{selectedProducts.length ? selectedProducts.map((product) => <article className="quote-item" key={product.slug}><img src={product.image} alt={product.name} /><div><strong>{product.name}</strong><span>{product.id} · {product.material} · {product.size}</span></div><button className="text-button" onClick={() => removeQuote(product.slug)}>移除</button></article>) : <p className="empty-panel">询价单为空，请先从产品中心加入产品。</p>}</div></div><form className="quote-form"><label>公司名称<input required placeholder="请输入公司名称" /></label><label>联系人<input required placeholder="请输入联系人" /></label><label>电话 / 邮箱<input required placeholder="手机号或邮箱" /></label><label>补充需求<textarea rows="5" placeholder="数量、工况、交期、收货地等" /></label><button className="button large full" type="button">提交询价</button><p className="form-note">静态演示，后续接入 Pages Functions 与 D1。</p></form></section></>;
+  return <><PageHead eyebrow="Quote" title="询价单" text="本页只收集询价意向，不接支付、不做会员系统。后续可用 Pages Functions + D1 保存询价。" /><section className="quote-layout"><div><div className="toolbar"><strong>已选产品</strong><button className="text-button" onClick={clearQuote}>清空</button></div><div className="quote-items">{selectedProducts.length ? selectedProducts.map((product) => <article className="quote-item" key={product.slug}><ProductImage product={product} /><div><strong>{product.name}</strong><span>{product.id} · {product.material} · {product.size}</span></div><button className="text-button" onClick={() => removeQuote(product.slug)}>移除</button></article>) : <p className="empty-panel">询价单为空，请先从产品中心加入产品。</p>}</div></div><form className="quote-form"><label>公司名称<input required placeholder="请输入公司名称" /></label><label>联系人<input required placeholder="请输入联系人" /></label><label>电话 / 邮箱<input required placeholder="手机号或邮箱" /></label><label>补充需求<textarea rows="5" placeholder="数量、工况、交期、收货地等" /></label><button className="button large full" type="button">提交询价</button><p className="form-note">静态演示，后续接入 Pages Functions 与 D1。</p></form></section></>;
 }
 
 function QuoteRail({ selectedProducts, removeQuote, navigate }) {

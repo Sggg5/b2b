@@ -22,7 +22,16 @@ export async function onRequestGet({ env, params }) {
     return new Response("Not found", { status: 404 });
   }
 
-  const object = await env.PRODUCT_BUCKET.get(key);
+  if (!env.PRODUCT_BUCKET) {
+    return new Response("Not found", { status: 404 });
+  }
+
+  let object;
+  try {
+    object = await env.PRODUCT_BUCKET.get(key);
+  } catch {
+    return new Response("Not found", { status: 404 });
+  }
 
   if (!object) {
     return new Response("Not found", { status: 404 });
