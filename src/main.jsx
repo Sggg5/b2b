@@ -16,6 +16,7 @@ const materials = [...new Set(products.map((product) => product.material))];
 const pressures = [...new Set(products.map((product) => product.pressure))];
 const connections = [...new Set(products.map((product) => product.connection))];
 const quoteKey = "frantaQuoteItems";
+const blogHomeUrl = "https://blog.sggg.cc.cd/";
 
 const categoryMeta = {
   "沟槽管件": ["沟槽管件系统", "适用于消防、给排水和水务主干管路"],
@@ -52,33 +53,44 @@ const downloadCards = [
 
 const fallbackBlogPosts = [
   {
+    slug: "grooved-vs-press-selection",
     title: "沟槽连接和环压连接如何选择",
     summary: "从施工效率、压力等级、维护方式比较两种管路连接方案。",
     date: "2024-05-12",
     tags: ["沟槽", "环压", "水务"],
-    href: "/downloads/",
+    href: blogHomeUrl,
+    body: "从施工效率、压力等级、维护方式比较沟槽连接和环压连接方案。",
     product: products[0]
   },
   {
+    slug: "stainless-fitting-selection-parameters",
     title: "不锈钢管件选型的 6 个参数",
     summary: "材质、规格、压力、介质、连接方式和执行标准是询价前核心信息。",
     date: "2024-05-08",
     tags: ["不锈钢水管", "304", "316L"],
-    href: "/downloads/",
+    href: blogHomeUrl,
+    body: "材质、规格、压力、介质、连接方式和执行标准是询价前核心信息。",
     product: products.find((item) => item.category === "单卡管件") || products[1]
   },
   {
+    slug: "manifold-water-system-application",
     title: "水务系统中分水器的典型应用",
     summary: "用于泵房、净水、多支路设备配套时，需要关注流量与支路数量。",
     date: "2024-05-05",
     tags: ["水务", "分水器"],
-    href: "/downloads/",
+    href: blogHomeUrl,
+    body: "用于泵房、净水、多支路设备配套时，需要关注流量与支路数量。",
     product: products.find((item) => item.category === "不锈钢管") || products[2]
   }
 ];
 
-const blogPosts = buildBlogPosts(postModules);
+const blogPosts = getCollection("blog");
 const siteBlogPosts = (blogPosts.length ? blogPosts : fallbackBlogPosts).sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+
+function getCollection(collection) {
+  if (collection !== "blog") return [];
+  return buildBlogPosts(postModules);
+}
 
 function buildBlogPosts(modules) {
   return Object.entries(modules).map(([path, markdown]) => {
@@ -87,11 +99,13 @@ function buildBlogPosts(modules) {
     const product = productForTags(meta.tags, meta.title);
 
     return {
+      slug,
       title: meta.title || slug,
       summary: meta.description || firstParagraph(markdown),
       date: meta.pubDate || meta.date || "",
       tags: meta.tags,
-      href: `/downloads/?article=${encodeURIComponent(slug)}`,
+      href: blogHomeUrl,
+      body: markdown.replace(/^---[\s\S]*?---/, "").trim(),
       product
     };
   });
@@ -293,6 +307,7 @@ function App() {
         {route.name === "home" && <Home navigate={navigate} />}
         {route.name === "products" && <Products addQuote={addQuote} navigate={navigate} />}
         {route.name === "productDetail" && <ProductDetail product={route.product} addQuote={addQuote} navigate={navigate} />}
+        {route.name === "blogDetail" && <BlogDetail post={route.post} navigate={navigate} />}
         {route.name === "downloads" && <Downloads />}
         {route.name === "quote" && <Quote selectedProducts={selectedProducts} removeQuote={removeQuote} clearQuote={() => setQuote([])} />}
       </main>
@@ -308,12 +323,23 @@ function resolveRoute(path) {
     const product = products.find((item) => item.slug === slug) || products[0];
     return { name: "productDetail", active: "产品中心", product };
   }
+  if (path.startsWith("/blog/")) {
+    const slug = path.split("/").filter(Boolean)[1];
+    const post = siteBlogPosts.find((item) => item.slug === slug) || siteBlogPosts[0];
+    return { name: "blogDetail", active: "技术支持", post };
+  }
   if (path === "/downloads" || path === "/downloads/") return { name: "downloads", active: "下载中心" };
   if (path === "/quote" || path === "/quote/") return { name: "quote", active: "联系我们" };
   return { name: "home", active: "首页" };
 }
 
 function Link({ href, navigate, children, className }) {
+  const external = /^https?:\/\//i.test(href);
+
+  if (external) {
+    return <a className={className} href={href}>{children}</a>;
+  }
+
   return (
     <a className={className} href={href} onClick={(event) => { event.preventDefault(); navigate(href); }}>
       {children}
@@ -446,7 +472,7 @@ function Home({ navigate }) {
         )}
       </section>
 
-      <HomeBlock title="技术博客" action="查看全部文章 →" href="/downloads/" navigate={navigate}>
+      <HomeBlock title="技术博客" action="查看全部文章 →" href={blogHomeUrl} navigate={navigate}>
         <div className="pro-blog-grid">
           {latestPosts.map((post) => <BlogCard key={post.title} post={post} navigate={navigate} />)}
         </div>
@@ -479,16 +505,55 @@ function AiResultCard({ result, navigate }) {
 
 function BlogCard({ post, navigate }) {
   return (
-    <article className="pro-blog-card">
+    <Link className="pro-blog-card" href={post.href || `/blog/${post.slug}/`} navigate={navigate}>
       <ProductImage product={post.product} />
       <div>
         <h3>{post.title}</h3>
         <p>{post.summary}</p>
         <span>{post.date}</span>
-        <Link href={post.href || "/downloads/"} navigate={navigate}>阅读全文 →</Link>
+        <strong className="blog-read-more">阅读全文 →</strong>
       </div>
-    </article>
+    </Link>
   );
+}
+
+function BlogDetail({ post, navigate }) {
+  if (!post) {
+    return <PageHead eyebrow="Blog" title="文章未找到" text="请返回首页查看最新技术文章。" />;
+  }
+
+  const relatedProducts = products.filter((product) => {
+    const tags = categoryRelatedTags[product.category] || [];
+    return [product.category, product.name, ...tags].some((tag) => `${post.title} ${post.summary} ${(post.tags || []).join(" ")}`.includes(tag));
+  }).slice(0, 3);
+
+  return (
+    <div className="blog-detail-page">
+      <section className="blog-detail">
+        <p className="eyebrow">TECHNICAL BLOG · {post.date}</p>
+        <h1>{post.title}</h1>
+        <p>{post.summary}</p>
+        <div className="blog-tag-row">
+          {(post.tags || []).map((tag) => <span key={tag}>{tag}</span>)}
+        </div>
+        <div className="blog-body">
+          {markdownPreview(post.body).map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+        </div>
+      </section>
+      <section className="section">
+        <div className="section-head"><h2>相关产品</h2><Link href="/products/" navigate={navigate}>进入产品中心</Link></div>
+        <div className="product-grid">{relatedProducts.map((item) => <ProductCard key={item.slug} product={item} addQuote={() => {}} navigate={navigate} />)}</div>
+      </section>
+    </div>
+  );
+}
+
+function markdownPreview(markdown = "") {
+  return markdown
+    .split(/\n{2,}/)
+    .map((block) => block.replace(/^#+\s*/, "").trim())
+    .filter((block) => block && !block.startsWith("|") && !block.startsWith("---"))
+    .slice(0, 8);
 }
 
 function Feature({ title, text }) {
