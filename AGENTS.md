@@ -27,4 +27,15 @@
 - functions/
 - public/
 - data/
-- migrations/
+- migrations/# AGENTS.md
+
+本项目是 Franta 轻量版 B2B 网站，部署到 Cloudflare Pages。
+
+要求：
+- 使用 Cloudflare Pages
+- 使用 Pages Functions
+- 使用 R2 存图片、PDF、CAD
+- 使用 D1 存询价单
+- 不使用 MySQL、Django、传统 Node 后端
+- 不要提交任何 API Token、Secret、账号密码
+- 所有密钥只放 GitHub Actions Secrets 或 Cloudflare Pages 环境变量
