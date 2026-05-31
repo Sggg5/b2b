@@ -29,8 +29,6 @@
 - data/
 - migrations/# AGENTS.md
 
-本项目是 Franta 轻量版 B2B 网站，部署到 Cloudflare Pages。
-
 要求：
 - 使用 Cloudflare Pages
 - 使用 Pages Functions
