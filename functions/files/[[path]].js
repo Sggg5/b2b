@@ -15,7 +15,7 @@ const contentTypes = {
   ".dxf": "image/vnd.dxf"
 };
 
-export async function onRequestGet({ env, params }) {
+export async function onRequestGet({ env, params, request }) {
   const key = normalizePath(params.path);
 
   if (!key || !allowedPrefixes.some((prefix) => key.startsWith(prefix))) {
@@ -23,18 +23,18 @@ export async function onRequestGet({ env, params }) {
   }
 
   if (!env.PRODUCT_BUCKET) {
-    return new Response("Not found", { status: 404 });
+    return staticAssetFallback(env, request);
   }
 
   let object;
   try {
     object = await env.PRODUCT_BUCKET.get(key);
   } catch {
-    return new Response("Not found", { status: 404 });
+    return staticAssetFallback(env, request);
   }
 
   if (!object) {
-    return new Response("Not found", { status: 404 });
+    return staticAssetFallback(env, request);
   }
 
   const headers = new Headers();
@@ -47,6 +47,14 @@ export async function onRequestGet({ env, params }) {
   }
 
   return new Response(object.body, { headers });
+}
+
+function staticAssetFallback(env, request) {
+  if (env.ASSETS && request) {
+    return env.ASSETS.fetch(request);
+  }
+
+  return new Response("Not found", { status: 404 });
 }
 
 function normalizePath(path) {

@@ -1011,6 +1011,22 @@ textarea {
   font-weight: 900;
 }
 
+.table-product-cell {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.table-product-cell img {
+  width: 74px;
+  height: 74px;
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
 .product-table small {
   display: block;
   color: var(--muted);

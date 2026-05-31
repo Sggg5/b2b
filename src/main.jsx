@@ -3,21 +3,12 @@ import { createRoot } from "react-dom/client";
 import products from "../data/products.json";
 import "./styles.css";
 
-const categories = ["沟槽管件", "环压管件", "分水器", "不锈钢管", "法兰", "阀门配件"];
+const categories = [...new Set(products.map((product) => product.category))];
 const materials = [...new Set(products.map((product) => product.material))];
 const pressures = [...new Set(products.map((product) => product.pressure))];
 const connections = [...new Set(products.map((product) => product.connection))];
 const quoteKey = "frantaQuoteItems";
 const r2Image = (path) => `/files/products/images/${path}`;
-
-const categoryImages = {
-  "沟槽管件": r2Image("grooved/category-grooved-fittings.webp"),
-  "环压管件": r2Image("press/category-press-fittings.webp"),
-  "分水器": r2Image("manifold/category-manifold.webp"),
-  "不锈钢管": r2Image("pipe/category-stainless-pipe.webp"),
-  "法兰": r2Image("flange/category-flange.webp"),
-  "阀门配件": r2Image("flange/category-valve-accessories.webp")
-};
 
 const solutions = [
   ["市政水务系统", "不锈钢管、法兰、阀门配件组合，适配泵房、管廊和二次供水。", "不锈钢管", r2Image("pipe/solution-municipal-water.webp")],
@@ -241,7 +232,7 @@ function Home({ addQuote, navigate }) {
       <SectionHead eyebrow="Product Range" title="产品分类" action={<Link className="text-button" href="/products/" navigate={navigate}>查看全部</Link>} />
       <section className="home-section home-category-grid">
         {categories.map((category) => {
-          return <Link key={category} className="home-category-card" href={`/products/?category=${encodeURIComponent(category)}`} navigate={navigate}><R2Image src={categoryImages[category]} alt={`${category} 分类图`} /><strong>{category}</strong></Link>;
+          return <Link key={category} className="home-category-card" href={`/products/?category=${encodeURIComponent(category)}`} navigate={navigate}><ProductImage product={products.find((item) => item.category === category) || products[0]} /><strong>{category}</strong></Link>;
         })}
       </section>
       <section className="home-section ai-selector">
@@ -327,7 +318,7 @@ function ProductTable({ products: rows, addQuote, navigate }) {
         <tbody>
           {rows.map((product) => (
             <tr key={product.slug}>
-              <td><Link href={`/products/${product.slug}/`} navigate={navigate}>{product.name}</Link><small>{product.id}</small></td>
+              <td><div className="table-product-cell"><ProductImage product={product} /><div><Link href={`/products/${product.slug}/`} navigate={navigate}>{product.name}</Link><small>{product.id}</small></div></div></td>
               <td>{product.category}</td>
               <td>{product.material}</td>
               <td>{product.size}</td>
