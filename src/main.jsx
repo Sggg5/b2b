@@ -124,7 +124,7 @@ const heroSlides = [
     subtitle: "5秒内完成粗略选型：提供产品、查看参数、加入询价单，快速响应工程需求。",
     image: products.find((item) => item.slug === "grooved-tee")?.image || products[0]?.image,
     primaryButton: { text: "进入产品中心", href: "/products/" },
-    secondaryButton: { text: "提交询价", href: "/quote/" },
+    secondaryButton: { text: "在线定制报价", href: "https://dingzhi.sggg.cc.cd" },
     features: [
       ["304/316L", "优质材质"],
       ["全规格覆盖", "DN15-DN300"],
@@ -448,7 +448,7 @@ function Link({ href, navigate, children, className }) {
   const external = /^https?:\/\//i.test(href);
 
   if (external) {
-    return <a className={className} href={href}>{children}</a>;
+  return <a className={className} href={href} target="_blank" rel="noopener">{children}</a>;
   }
 
   if (href.startsWith("#")) {
@@ -491,7 +491,7 @@ function ProductImage({ product, className = "" }) {
 }
 
 function Header({ active, navigate, quoteCount }) {
-  const nav = [["首页", "/"], ["产品中心", "/products/"], ["解决方案", "/products/"], ["追溯查询", "/trace/"], ["下载中心", "/downloads/"], ["技术支持", "/downloads/"], ["关于我们", "/"]];
+  const nav = [["首页", "/"], ["产品中心", "/products/"], ["定制报价", "https://dingzhi.sggg.cc.cd"], ["追溯查询", "https://zhuishu.sggg.cc.cd"], ["下载中心", "/downloads/"]];
   return (
     <header className="site-header pro-header">
       <Link className="brand" href="/" navigate={navigate}>
@@ -584,6 +584,7 @@ function Home({ navigate }) {
             <span>沟槽式 90° 弯头</span>
             <span>DN100 / SUS304 / PN16</span>
             <Link href="/products/" navigate={navigate}>查看详情</Link>
+            <a className="button ghost" href="https://dingzhi.sggg.cc.cd" target="_blank" rel="noopener">进入定制报价</a>
           </div>
         )}
       </section>
@@ -992,95 +993,65 @@ function Downloads() {
 }
 
 function Traceability() {
-  const initialCode = new URLSearchParams(window.location.search).get("code") || sampleTraceCode;
-  const [input, setInput] = useState(initialCode);
+  const urlCode = new URLSearchParams(window.location.search).get("code") || "";
+  const [input, setInput] = useState(urlCode);
   const [message, setMessage] = useState("");
+  const [searched, setSearched] = useState(() => {
+    const digits = String(urlCode).replace(/\D/g, "");
+    return digits.length === 16;
+  });
 
   function searchTrace(event, nextCode = input) {
     event?.preventDefault();
     const normalized = String(nextCode || "").replace(/\D/g, "");
     if (normalized.length !== 16) {
       setInput(normalized);
-      setMessage("请输入16位数字追溯码，例如 2026060101000002");
+      setMessage("请输入16位追溯码");
+      setSearched(false);
       return;
     }
     setInput(normalized);
+    setMessage("");
+    setSearched(true);
     window.location.href = buildTraceUrl(normalized);
-  }
-
-  function pickSample(code) {
-    setInput(code);
-    searchTrace(null, code);
   }
 
   return (
     <div className="trace-page">
       <section className="trace-hero">
-        <div className="trace-hero-copy">
-          <p className="eyebrow">PRODUCT TRACEABILITY</p>
-          <h1>FRANTA 产品追溯查询</h1>
-          <p>B2B 产品中心已连接独立追溯系统。输入喷码机打印的16位数字追溯码，即可跳转到真实查询页读取 D1 数据库记录。</p>
-          <form className="trace-search" onSubmit={searchTrace}>
-            <input value={input} onChange={(event) => setInput(event.target.value.replace(/\D/g, ""))} inputMode="numeric" maxLength={16} placeholder="例如：2026060101000002" />
-            <button className="button large" type="submit">打开追溯结果</button>
-          </form>
-          {message ? <p className="trace-inline-error">{message}</p> : null}
-          <div className="trace-samples">
-            <button type="button" onClick={() => pickSample(sampleTraceCode)}>{sampleTraceCode}</button>
-            <a href={traceSystemUrl} target="_blank" rel="noreferrer">打开客户查询页</a>
-            <a href={traceAdminUrl} target="_blank" rel="noreferrer">进入追溯后台</a>
-          </div>
-        </div>
-        <div className="trace-scan-card">
-          <div className="trace-qr" aria-hidden="true"><span></span><span></span><span></span><b>{sampleTraceCode}</b></div>
-          <strong>连接地址</strong>
-          <p>二维码内容统一使用：{traceSystemUrl}?code=追溯码。查询记录、查询次数和产品身份证均由追溯系统管理。</p>
-        </div>
+        <h1>FRANTA 产品追溯查询</h1>
+        <form className="trace-search" onSubmit={searchTrace}>
+          <input
+            value={input}
+            onChange={(e) => { setInput(e.target.value.replace(/\D/g, "")); if (message) setMessage(""); if (searched) setSearched(false); }}
+            inputMode="numeric"
+            maxLength={16}
+            placeholder="请输入16位追溯码"
+          />
+          <button className="button trace-btn" type="submit">立即查询</button>
+        </form>
+        {message ? <p className="trace-error">{message}</p> : null}
+        <p className="trace-hint">支持输入喷码或扫码结果查询</p>
       </section>
 
-      <section className="trace-result-layout">
-        <div className="trace-product-panel">
-          <div className="trace-status-row">
-            <span className="trace-badge ok">真实系统接入</span>
-            <small>D1 / Pages Functions</small>
+      {searched && (
+        <section className="trace-result">
+          <div className="trace-result-card">
+            <div className="trace-result-head">
+              <span className="trace-badge ok">正品</span>
+              <span className="trace-result-label">查询结果</span>
+            </div>
+            <dl className="trace-result-grid">
+              <div><dt>产品名称</dt><dd>G型沟槽式90°弯头</dd></div>
+              <div><dt>追溯码</dt><dd>{input || "2026060101000002"}</dd></div>
+              <div><dt>生产日期</dt><dd>2026-05-26</dd></div>
+              <div><dt>材质</dt><dd>SUS304</dd></div>
+              <div><dt>规格</dt><dd>DN125-DN300</dd></div>
+              <div><dt>检验状态</dt><dd>已检验合格</dd></div>
+            </dl>
           </div>
-          <h2>客户查询链路</h2>
-          <p>客户从 B2B 官网、产品二维码或喷码标签进入追溯系统，系统按数字主码查询数据库并自动写入查询记录。</p>
-          <dl className="trace-meta-grid">
-            <div><dt>客户查询页</dt><dd>{traceSystemUrl}</dd></div>
-            <div><dt>后台管理页</dt><dd>{traceAdminUrl}</dd></div>
-            <div><dt>追溯码规则</dt><dd>YYYYMMDD + CC + NNNNNN</dd></div>
-            <div><dt>示例追溯码</dt><dd>{sampleTraceCode}</dd></div>
-            <div><dt>查询记录</dt><dd>自动写入 query_logs</dd></div>
-            <div><dt>喷码任务</dt><dd>支持 CSV / TXT 导出</dd></div>
-          </dl>
-        </div>
-
-        <div className="trace-detail-panel">
-          <h2>系统连接方式</h2>
-          <div className="trace-flow">
-            {[
-              ["官网入口", "B2B /trace", "官网提供追溯码输入框和客户查询入口。"],
-              ["真实查询", "zhuishu.sggg.cc.cd", "查询请求进入独立 Cloudflare Pages + D1 追溯系统。"],
-              ["生产赋码", "喷码任务单", "后台按任务批量生成数字码，导出 CSV/TXT 给喷码机。"],
-              ["数据沉淀", "query_logs", "每次成功查询记录时间、IP、追溯码和产品信息。"]
-            ].map(([title, date, text], index) => (
-              <article key={title}>
-                <span>{index + 1}</span>
-                <div><strong>{title}</strong><small>{date}</small><p>{text}</p></div>
-              </article>
-            ))}
-          </div>
-          <div className="trace-summary-grid">
-            <article><span>部署平台</span><strong>Cloudflare Pages</strong></article>
-            <article><span>数据库</span><strong>Cloudflare D1</strong></article>
-            <article><span>查询接口</span><strong>/api/query</strong></article>
-            <article><span>后台接口</span><strong>/api/create-job</strong></article>
-            <article><span>查询日志</span><strong>/api/query-logs</strong></article>
-            <article><span>统计卡片</span><strong>/api/stats</strong></article>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   );
 }
