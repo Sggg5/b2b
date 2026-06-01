@@ -17,6 +17,9 @@ const pressures = [...new Set(products.map((product) => product.pressure))];
 const connections = [...new Set(products.map((product) => product.connection))];
 const quoteKey = "frantaQuoteItems";
 const blogHomeUrl = "https://blog.sggg.cc.cd/";
+const traceSystemUrl = "https://zhuishu.sggg.cc.cd/";
+const traceAdminUrl = "https://zhuishu.sggg.cc.cd/admin";
+const sampleTraceCode = "2026060101000002";
 
 const categoryMeta = {
   "沟槽管件": ["沟槽管件系统", "适用于消防、给排水和水务主干管路"],
@@ -49,6 +52,70 @@ const downloadCards = [
   ["三维模型", "STEP / IGS", "BOX"],
   ["安装说明", "PDF", "BOOK"],
   ["检测报告", "PDF", "DOC"]
+];
+
+const traceLookupKey = "frantaTraceLookups";
+const traceRecords = [
+  {
+    code: "FRT-260526-7K9P3X",
+    product: products.find((item) => item.slug === "grooved-90-elbow") || products[0],
+    batchNo: "20260526A01",
+    serialNo: "FL-GC-20260526-0018",
+    materialHeat: "S30408-2605-18",
+    inspector: "QC-08",
+    inspectionNo: "FT-QC-20260526-018",
+    productionLine: "沟槽管件二线",
+    customer: "昆山水务",
+    deliveryNo: "SO-20260528-036",
+    status: "已出厂",
+    steps: [
+      ["原料入库", "2026-05-23", "S30408 材质复验合格"],
+      ["成型加工", "2026-05-24", "沟槽成型与尺寸抽检通过"],
+      ["压力/外观检验", "2026-05-26", "水压与外观检验合格"],
+      ["赋码包装", "2026-05-26", "一物一码绑定批次与检验记录"],
+      ["发货出库", "2026-05-28", "发往昆山水务项目"]
+    ]
+  },
+  {
+    code: "FRT-260527-HM8Q2A",
+    product: products.find((item) => item.slug === "double-press-tee") || products[1],
+    batchNo: "20260527B03",
+    serialNo: "FL-SK-20260527-0042",
+    materialHeat: "S31603-2605-07",
+    inspector: "QC-12",
+    inspectionNo: "FT-QC-20260527-042",
+    productionLine: "双卡压管件一线",
+    customer: "南通水务",
+    deliveryNo: "SO-20260529-052",
+    status: "已出厂",
+    steps: [
+      ["原料入库", "2026-05-24", "316L 材质炉批号核验完成"],
+      ["精密成型", "2026-05-25", "卡压端尺寸在线检测通过"],
+      ["密封检验", "2026-05-27", "密封面与壁厚抽检合格"],
+      ["赋码包装", "2026-05-27", "追溯码写入发货批次"],
+      ["发货出库", "2026-05-29", "发往南通水务项目"]
+    ]
+  },
+  {
+    code: "FRT-260528-P6W3CN",
+    product: products.find((item) => item.slug === "stainless-water-pipe") || products[2],
+    batchNo: "20260528C02",
+    serialNo: "FL-PG-20260528-0106",
+    materialHeat: "S30408-2605-31",
+    inspector: "QC-03",
+    inspectionNo: "FT-QC-20260528-106",
+    productionLine: "不锈钢管材三线",
+    customer: "海宁水务",
+    deliveryNo: "SO-20260530-067",
+    status: "已出厂",
+    steps: [
+      ["钢带入库", "2026-05-25", "原料供应商批次核验完成"],
+      ["焊接成管", "2026-05-26", "在线焊缝检测通过"],
+      ["固溶与矫直", "2026-05-27", "外径与壁厚复检合格"],
+      ["赋码包装", "2026-05-28", "管材捆包与追溯码绑定"],
+      ["发货出库", "2026-05-30", "发往海宁水务项目"]
+    ]
+  }
 ];
 
 const heroSlides = [
@@ -351,6 +418,7 @@ function App() {
         {route.name === "productDetail" && <ProductDetail product={route.product} addQuote={addQuote} navigate={navigate} />}
         {route.name === "blogDetail" && <BlogDetail post={route.post} navigate={navigate} />}
         {route.name === "downloads" && <Downloads />}
+        {route.name === "trace" && <Traceability />}
         {route.name === "quote" && <Quote selectedProducts={selectedProducts} removeQuote={removeQuote} clearQuote={() => setQuote([])} />}
       </main>
       <Footer navigate={navigate} />
@@ -371,6 +439,7 @@ function resolveRoute(path) {
     return { name: "blogDetail", active: "技术支持", post };
   }
   if (path === "/downloads" || path === "/downloads/") return { name: "downloads", active: "下载中心" };
+  if (path === "/trace" || path === "/trace/") return { name: "trace", active: "追溯查询" };
   if (path === "/quote" || path === "/quote/") return { name: "quote", active: "联系我们" };
   return { name: "home", active: "首页" };
 }
@@ -400,6 +469,11 @@ function Link({ href, navigate, children, className }) {
   );
 }
 
+function buildTraceUrl(code = "") {
+  const digits = String(code || "").replace(/\D/g, "");
+  return digits ? `${traceSystemUrl}?code=${encodeURIComponent(digits)}` : traceSystemUrl;
+}
+
 function ProductImage({ product, className = "" }) {
   const [failed, setFailed] = useState(false);
 
@@ -417,7 +491,7 @@ function ProductImage({ product, className = "" }) {
 }
 
 function Header({ active, navigate, quoteCount }) {
-  const nav = [["首页", "/"], ["产品中心", "/products/"], ["解决方案", "/products/"], ["下载中心", "/downloads/"], ["技术支持", "/downloads/"], ["关于我们", "/"]];
+  const nav = [["首页", "/"], ["产品中心", "/products/"], ["解决方案", "/products/"], ["追溯查询", "/trace/"], ["下载中心", "/downloads/"], ["技术支持", "/downloads/"], ["关于我们", "/"]];
   return (
     <header className="site-header pro-header">
       <Link className="brand" href="/" navigate={navigate}>
@@ -545,12 +619,32 @@ function Home({ navigate }) {
         </div>
       </HomeBlock>
 
+      <HomeBlock title="产品追溯" action="进入追溯系统 →" href="/trace/" navigate={navigate}>
+        <TraceConnectCard navigate={navigate} />
+      </HomeBlock>
+
       <HomeBlock title="技术博客" action="查看全部文章 →" href={blogHomeUrl} navigate={navigate}>
         <div className="pro-blog-grid">
           {latestPosts.map((post) => <BlogCard key={post.title} post={post} navigate={navigate} />)}
         </div>
       </HomeBlock>
     </div>
+  );
+}
+
+function TraceConnectCard({ navigate }) {
+  return (
+    <section className="trace-connect-card">
+      <div>
+        <p className="eyebrow">FRANTA TRACEABILITY</p>
+        <h3>一物一码连接真实追溯系统</h3>
+        <p>客户扫描产品喷码后进入独立追溯系统，读取 D1 数据库中的产品、批次、炉号、检验状态、节气识别和查询记录。</p>
+      </div>
+      <div className="trace-connect-actions">
+        <Link className="button large" href="/trace/" navigate={navigate}>输入追溯码</Link>
+        <a className="button ghost large" href={traceSystemUrl} target="_blank" rel="noreferrer">打开查询页</a>
+      </div>
+    </section>
   );
 }
 
@@ -815,7 +909,7 @@ function ProductDetail({ product, addQuote, navigate }) {
   const relatedPosts = getRelatedPosts([product.category, product.name, ...(categoryRelatedTags[product.category] || [])], 3);
   return (
     <>
-      <section className="detail-layout"><div className="detail-media"><ProductImage product={product} /></div><div className="detail-copy"><p className="eyebrow">{product.category} · {product.id}</p><h1>{product.name}</h1><p>{product.description}</p><section className="detail-panel"><h2>核心参数</h2><SpecTable product={product} /></section><div className="detail-actions"><button className="button large" onClick={() => addQuote(product.slug)}>加入询价单</button><a className="button ghost large" href={product.pdf}>PDF 样本</a><a className="button ghost large" href={product.cad}>CAD 图纸</a></div></div></section>
+      <section className="detail-layout"><div className="detail-media"><ProductImage product={product} /></div><div className="detail-copy"><p className="eyebrow">{product.category} · {product.id}</p><h1>{product.name}</h1><p>{product.description}</p><section className="detail-panel"><h2>核心参数</h2><SpecTable product={product} /></section><div className="detail-actions"><button className="button large" onClick={() => addQuote(product.slug)}>加入询价单</button><Link className="button ghost large" href="/trace/" navigate={navigate}>追溯查询</Link><a className="button ghost large" href={product.pdf}>PDF 样本</a><a className="button ghost large" href={product.cad}>CAD 图纸</a></div></div></section>
       <section className="section"><div className="section-head"><h2>相关技术文章</h2><Link href="/downloads/" navigate={navigate}>查看资料中心</Link></div><div className="detail-blog-grid">{relatedPosts.map((post) => <BlogCard key={post.title} post={post} navigate={navigate} />)}</div></section>
       <section className="section"><div className="section-head"><h2>相关产品</h2><Link href="/products/" navigate={navigate}>返回产品中心</Link></div><div className="product-grid">{related.map((item) => <ProductCard key={item.slug} product={item} addQuote={addQuote} navigate={navigate} />)}</div></section>
     </>
@@ -897,6 +991,100 @@ function Downloads() {
   );
 }
 
+function Traceability() {
+  const initialCode = new URLSearchParams(window.location.search).get("code") || sampleTraceCode;
+  const [input, setInput] = useState(initialCode);
+  const [message, setMessage] = useState("");
+
+  function searchTrace(event, nextCode = input) {
+    event?.preventDefault();
+    const normalized = String(nextCode || "").replace(/\D/g, "");
+    if (normalized.length !== 16) {
+      setInput(normalized);
+      setMessage("请输入16位数字追溯码，例如 2026060101000002");
+      return;
+    }
+    setInput(normalized);
+    window.location.href = buildTraceUrl(normalized);
+  }
+
+  function pickSample(code) {
+    setInput(code);
+    searchTrace(null, code);
+  }
+
+  return (
+    <div className="trace-page">
+      <section className="trace-hero">
+        <div className="trace-hero-copy">
+          <p className="eyebrow">PRODUCT TRACEABILITY</p>
+          <h1>FRANTA 产品追溯查询</h1>
+          <p>B2B 产品中心已连接独立追溯系统。输入喷码机打印的16位数字追溯码，即可跳转到真实查询页读取 D1 数据库记录。</p>
+          <form className="trace-search" onSubmit={searchTrace}>
+            <input value={input} onChange={(event) => setInput(event.target.value.replace(/\D/g, ""))} inputMode="numeric" maxLength={16} placeholder="例如：2026060101000002" />
+            <button className="button large" type="submit">打开追溯结果</button>
+          </form>
+          {message ? <p className="trace-inline-error">{message}</p> : null}
+          <div className="trace-samples">
+            <button type="button" onClick={() => pickSample(sampleTraceCode)}>{sampleTraceCode}</button>
+            <a href={traceSystemUrl} target="_blank" rel="noreferrer">打开客户查询页</a>
+            <a href={traceAdminUrl} target="_blank" rel="noreferrer">进入追溯后台</a>
+          </div>
+        </div>
+        <div className="trace-scan-card">
+          <div className="trace-qr" aria-hidden="true"><span></span><span></span><span></span><b>{sampleTraceCode}</b></div>
+          <strong>连接地址</strong>
+          <p>二维码内容统一使用：{traceSystemUrl}?code=追溯码。查询记录、查询次数和产品身份证均由追溯系统管理。</p>
+        </div>
+      </section>
+
+      <section className="trace-result-layout">
+        <div className="trace-product-panel">
+          <div className="trace-status-row">
+            <span className="trace-badge ok">真实系统接入</span>
+            <small>D1 / Pages Functions</small>
+          </div>
+          <h2>客户查询链路</h2>
+          <p>客户从 B2B 官网、产品二维码或喷码标签进入追溯系统，系统按数字主码查询数据库并自动写入查询记录。</p>
+          <dl className="trace-meta-grid">
+            <div><dt>客户查询页</dt><dd>{traceSystemUrl}</dd></div>
+            <div><dt>后台管理页</dt><dd>{traceAdminUrl}</dd></div>
+            <div><dt>追溯码规则</dt><dd>YYYYMMDD + CC + NNNNNN</dd></div>
+            <div><dt>示例追溯码</dt><dd>{sampleTraceCode}</dd></div>
+            <div><dt>查询记录</dt><dd>自动写入 query_logs</dd></div>
+            <div><dt>喷码任务</dt><dd>支持 CSV / TXT 导出</dd></div>
+          </dl>
+        </div>
+
+        <div className="trace-detail-panel">
+          <h2>系统连接方式</h2>
+          <div className="trace-flow">
+            {[
+              ["官网入口", "B2B /trace", "官网提供追溯码输入框和客户查询入口。"],
+              ["真实查询", "zhuishu.sggg.cc.cd", "查询请求进入独立 Cloudflare Pages + D1 追溯系统。"],
+              ["生产赋码", "喷码任务单", "后台按任务批量生成数字码，导出 CSV/TXT 给喷码机。"],
+              ["数据沉淀", "query_logs", "每次成功查询记录时间、IP、追溯码和产品信息。"]
+            ].map(([title, date, text], index) => (
+              <article key={title}>
+                <span>{index + 1}</span>
+                <div><strong>{title}</strong><small>{date}</small><p>{text}</p></div>
+              </article>
+            ))}
+          </div>
+          <div className="trace-summary-grid">
+            <article><span>部署平台</span><strong>Cloudflare Pages</strong></article>
+            <article><span>数据库</span><strong>Cloudflare D1</strong></article>
+            <article><span>查询接口</span><strong>/api/query</strong></article>
+            <article><span>后台接口</span><strong>/api/create-job</strong></article>
+            <article><span>查询日志</span><strong>/api/query-logs</strong></article>
+            <article><span>统计卡片</span><strong>/api/stats</strong></article>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function DownloadColumn({ title, items, field }) {
   return <article className="download-column"><h2>{title}</h2>{items.map((product) => <a key={product.slug} href={product[field]}><span>{product.name}</span><small>{field.toUpperCase()}</small></a>)}</article>;
 }
@@ -939,11 +1127,13 @@ function Footer({ navigate }) {
         <Link href="/downloads/" navigate={navigate}>常见问题</Link>
         <Link href="/downloads/" navigate={navigate}>视频教程</Link>
         <Link href="/products/" navigate={navigate}>选型工具</Link>
+        <Link href="/trace/" navigate={navigate}>追溯查询</Link>
         <Link href="/quote/" navigate={navigate}>联系我们</Link>
       </div>
       <div className="footer-contact">
         <a href="tel:4000000000">400-xxx-xxxx</a>
         <a href="mailto:info@franta.com">info@franta.com</a>
+        <a className="button ghost" href={traceSystemUrl} target="_blank" rel="noreferrer">产品追溯</a>
         <Link className="button" href="/quote/" navigate={navigate}>联系我们</Link>
       </div>
     </footer>
