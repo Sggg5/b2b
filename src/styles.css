@@ -1899,43 +1899,54 @@ td small {
 /* Polished industrial homepage */
 .pro-header {
   width: 100%;
-  height: 72px;
-  padding: 14px clamp(32px, 4vw, 64px);
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(16px);
+  min-height: 84px;
+  padding: 16px clamp(36px, 4.5vw, 72px);
+  background: rgba(255, 255, 255, 0.96);
+  border-bottom-color: rgba(0, 107, 93, 0.16);
+  box-shadow: 0 10px 28px rgba(22, 32, 42, 0.06);
+  backdrop-filter: blur(18px);
 }
 
 .pro-header .brand {
-  gap: 12px;
+  gap: 14px;
 }
 
 .brand-mark {
   display: inline-grid;
-  width: 36px;
-  height: 36px;
+  width: 48px;
+  height: 48px;
   place-items: center;
   border-radius: 8px;
   background: #182433;
   color: #fff;
+  font-size: 18px;
   font-weight: 800;
+}
+
+.pro-header .brand strong {
+  color: #172431;
+  font-size: 17px;
+  line-height: 1.1;
 }
 
 .pro-header .brand small {
   display: block;
-  margin-top: 2px;
+  margin-top: 4px;
   color: #7b8792;
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 1.2;
 }
 
 .top-nav {
   align-items: center;
-  gap: clamp(18px, 2.2vw, 34px);
+  gap: clamp(18px, 2vw, 32px);
 }
 
 .top-nav a {
   color: #172431;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
+  line-height: 1.2;
 }
 
 .top-nav a.active {
@@ -1948,15 +1959,15 @@ td small {
 
 .nav-globe {
   color: #172431;
-  font-size: 18px;
+  font-size: 19px;
 }
 
 .contact-button {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  min-height: 38px;
-  padding: 0 18px;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 22px !important;
   border-radius: 7px;
   background: #006b5d;
   color: #fff !important;

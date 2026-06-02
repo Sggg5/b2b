@@ -3,7 +3,8 @@ import { createRoot } from "react-dom/client";
 import products from "../data/products.json";
 import "./styles.css";
 
-const postModules = import.meta.glob("../posts/**/*.md", { query: "?raw", import: "default", eager: true });
+const localPostModules = import.meta.glob("../posts/**/*.md", { query: "?raw", import: "default", eager: true });
+const blogLibraryPostModules = import.meta.glob("../../blog/src/content/blog/**/*.md", { query: "?raw", import: "default", eager: true });
 
 const redirectedPath = sessionStorage.getItem("frantaSpaRedirect");
 if (redirectedPath) {
@@ -198,14 +199,16 @@ const siteBlogPosts = (blogPosts.length ? blogPosts : fallbackBlogPosts).sort((a
 
 function getCollection(collection) {
   if (collection !== "blog") return [];
-  return buildBlogPosts(postModules);
+  const blogLibraryPosts = buildBlogPosts(blogLibraryPostModules, { external: true });
+  return blogLibraryPosts.length ? blogLibraryPosts : buildBlogPosts(localPostModules);
 }
 
-function buildBlogPosts(modules) {
+function buildBlogPosts(modules, options = {}) {
   return Object.entries(modules).map(([path, markdown]) => {
     const meta = parseFrontmatter(markdown);
     const slug = path.split("/").pop().replace(/\.(md|mdx)$/i, "");
     const product = productForTags(meta.tags, meta.title);
+    const href = options.external ? `${blogHomeUrl}blog/${encodeURIComponent(slug)}/` : `/blog/${slug}/`;
 
     return {
       slug,
@@ -213,11 +216,20 @@ function buildBlogPosts(modules) {
       summary: meta.description || firstParagraph(markdown),
       date: meta.pubDate || meta.date || "",
       tags: meta.tags,
-      href: `/blog/${slug}/`,
+      href,
       body: markdown.replace(/^---[\s\S]*?---/, "").trim(),
       product
     };
   });
+}
+
+function pickRandomPosts(posts, count = 3) {
+  const pool = [...posts];
+  for (let index = pool.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [pool[index], pool[randomIndex]] = [pool[randomIndex], pool[index]];
+  }
+  return pool.slice(0, count);
 }
 
 function parseFrontmatter(markdown = "") {
@@ -514,7 +526,7 @@ function Home({ navigate }) {
   const [heroIndex, setHeroIndex] = useState(0);
   const [isHeroPaused, setIsHeroPaused] = useState(false);
   const activeHero = heroSlides[heroIndex];
-  const latestPosts = siteBlogPosts.slice(0, 3);
+  const randomPosts = useMemo(() => pickRandomPosts(siteBlogPosts, 3), []);
 
   React.useEffect(() => {
     if (isHeroPaused) return undefined;
@@ -626,7 +638,7 @@ function Home({ navigate }) {
 
       <HomeBlock title="技术博客" action="查看全部文章 →" href={blogHomeUrl} navigate={navigate}>
         <div className="pro-blog-grid">
-          {latestPosts.map((post) => <BlogCard key={post.title} post={post} navigate={navigate} />)}
+          {randomPosts.map((post) => <BlogCard key={post.href || post.title} post={post} navigate={navigate} />)}
         </div>
       </HomeBlock>
     </div>
