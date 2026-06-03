@@ -13,6 +13,7 @@ const productsCsvPath = resolve(root, "data", "products.csv");
 const productsJsonPath = resolve(root, "data", "products.json");
 const productAssetMapPath = resolve(root, "data", "product-asset-map.csv");
 const productAssetMap = readProductAssetMap();
+const catalogImageSlugs = readCatalogImageSlugs();
 
 const products = readProducts();
 const blogPosts = readBlogPosts(blogRoot);
@@ -94,11 +95,94 @@ function normalizeProduct(product) {
     pressure: field(product, "pressure", "压力等级", "压力") || inferPressure(size),
     connection,
     description: field(product, "description", "描述", "产品描述") || `${name}${size ? `，规格 ${size}` : ""}`,
-    image: field(product, "image", "图片", "图片路径") || `/files/products/images/catalog/${assetSlug}.png`,
+    image: field(product, "image", "图片", "图片路径") || resolveProductImage(assetSlug, name, category),
     pdf: field(product, "pdf", "PDF", "pdf", "PDF路径") || `/files/products/pdf/${assetSlug}.pdf`,
     cad: field(product, "cad", "CAD", "cad", "CAD路径") || `/files/products/cad/${assetSlug}.dwg`,
     active: activeValue(field(product, "active", "启用", "是否启用"), stoppedAt, selected)
   };
+}
+
+function readCatalogImageSlugs() {
+  const dir = resolve(root, "public", "files", "products", "images", "catalog");
+  try {
+    return new Set(
+      readdirSync(dir)
+        .filter((file) => /\.png$/i.test(file))
+        .map((file) => file.replace(/\.png$/i, ""))
+    );
+  } catch {
+    return new Set();
+  }
+}
+
+function resolveProductImage(assetSlug, name, category) {
+  const catalogSlug = resolveCatalogSlug(assetSlug, name);
+  if (catalogSlug) return `/files/products/images/catalog/${catalogSlug}.png`;
+  return `/images/generated/archetypes/${inferArchetype(name, category)}.png`;
+}
+
+function resolveCatalogSlug(assetSlug, name) {
+  const candidates = imageSlugCandidates(assetSlug, name);
+  return candidates.find((candidate) => catalogImageSlugs.has(candidate)) || "";
+}
+
+function imageSlugCandidates(assetSlug, name) {
+  const candidates = [assetSlug];
+  const add = (value) => {
+    if (value && !candidates.includes(value)) candidates.push(value);
+  };
+
+  add(assetSlug.replace(/-type-a-/g, "-a-"));
+  add(assetSlug.replace(/-type-b-/g, "-b-"));
+  add(assetSlug.replace(/-equal-connector/g, "-coupling"));
+  add(assetSlug.replace(/-reducing-connector/g, "-reducing-coupling"));
+  add(assetSlug.replace(/-equal-coupling/g, "-coupling"));
+  add(assetSlug.replace(/-equal-tee/g, "-tee"));
+  add(assetSlug.replace(/-equal-cross/g, "-cross"));
+  add(assetSlug.replace(/-female-thread-adapter-connector/g, "-female-adapter"));
+  add(assetSlug.replace(/-male-thread-adapter-connector/g, "-male-adapter"));
+  add(assetSlug.replace(/-female-thread-tee/g, "-female-tee"));
+  add(assetSlug.replace(/-male-thread-tee/g, "-male-tee"));
+  add(assetSlug.replace(/-female-thread-90-adapter-elbow-short/g, "-female-90-elbow-short"));
+  add(assetSlug.replace(/-female-thread-90-adapter-elbow/g, "-female-90-elbow-long"));
+  add(assetSlug.replace(/-male-thread-90-adapter-elbow/g, "-male-90-elbow"));
+  add(assetSlug.replace(/-nut-movable-adapter-connector/g, "-swivel-female-adapter"));
+  add(assetSlug.replace(/-nut-thread-movable-connector/g, "-swivel-female-adapter"));
+  add(assetSlug.replace(/-nut-movable-90-adapter-elbow/g, "-swivel-90-elbow"));
+  add(assetSlug.replace(/-raised-face-flange-adapter-connector-butterfly-valve-pn16/g, "-flange-adapter"));
+  add(assetSlug.replace(/-raised-face-flange-adapter-connector-pn16/g, "-flange-adapter"));
+  add(assetSlug.replace(/-flange-adapter-connector-8-hole/g, "-flange-adapter"));
+  add(assetSlug.replace(/-flange-adapter-connector/g, "-flange-adapter"));
+  add(assetSlug.replace(/raised-face-plate-slip-on-flange-pn16/g, "double-press-flat-welding-flange"));
+  add(assetSlug.replace(/straight-pipe-raised-face-flange-connector-pn16/g, "double-press-straight-flange-adapter"));
+  add(assetSlug.replace(/straight-pipe-raised-face-flange-connector/g, "double-press-straight-flange-adapter"));
+
+  if (assetSlug.startsWith("stainless-pipe") || name.includes("不锈钢管")) add("stainless-water-pipe");
+  if (assetSlug.includes("coated-pipe") || name.includes("覆塑")) add("stainless-coated-pipe");
+  if (assetSlug.includes("insulated-pipe") || name.includes("保温")) add("stainless-insulated-pipe");
+  if (name.includes("沟槽卡箍")) add("grooved-clamp-coupling");
+  if (name.includes("沟槽") && name.includes("法兰")) add("grooved-flange-adapter");
+  if (name.includes("沟槽") && name.includes("异径") && name.includes("三通")) add("grooved-reducing-tee");
+  if (name.includes("沟槽") && name.includes("等径") && name.includes("三通")) add("grooved-tee");
+  if (name.includes("沟槽") && name.includes("异径") && name.includes("四通")) add("grooved-reducing-cross");
+  if (name.includes("沟槽") && name.includes("等径") && name.includes("四通")) add("grooved-cross");
+  if (name.includes("沟槽") && name.includes("异径") && (name.includes("接头") || name.includes("对接"))) add("grooved-reducing-coupling");
+  if (name.includes("沟槽") && name.includes("45")) add("grooved-45-elbow");
+  if (name.includes("沟槽") && name.includes("90")) add("grooved-90-elbow");
+
+  return candidates.flatMap((candidate) => [candidate, candidate.replace(/-connector/g, ""), candidate.replace(/-adapter/g, "")]);
+}
+
+function inferArchetype(name = "", category = "") {
+  const text = `${name} ${category}`;
+  if (text.includes("法兰")) return "flange";
+  if (text.includes("三通")) return "tee";
+  if (text.includes("四通")) return "cross";
+  if (text.includes("弯头")) return text.includes("45") ? "elbow45" : "elbow90";
+  if (text.includes("管帽")) return "cap";
+  if (text.includes("管桥")) return "bridge";
+  if (text.includes("管")) return "pipe";
+  return "coupling";
 }
 
 function field(record, ...names) {

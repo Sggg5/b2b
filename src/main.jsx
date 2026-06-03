@@ -392,6 +392,7 @@ function App() {
   const [path, setPath] = useState(window.location.pathname);
   const [quote, setQuoteState] = useState(getQuote);
   const [productList, setProductList] = useState(products);
+  const productGroups = useMemo(() => groupProducts(productList), [productList]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -436,15 +437,15 @@ function App() {
   }
 
   const selectedProducts = quote.map((slug) => productList.find((product) => product.slug === slug)).filter(Boolean);
-  const route = resolveRoute(path, productList);
+  const route = resolveRoute(path, productGroups);
 
   return (
     <>
       <Header active={route.active} navigate={navigate} quoteCount={quote.length} />
       <main>
         {route.name === "home" && <Home navigate={navigate} />}
-        {route.name === "products" && <Products products={productList} addQuote={addQuote} navigate={navigate} />}
-        {route.name === "productDetail" && <ProductDetail product={route.product} products={productList} addQuote={addQuote} navigate={navigate} />}
+        {route.name === "products" && <Products products={productGroups} addQuote={addQuote} navigate={navigate} />}
+        {route.name === "productDetail" && <ProductDetail product={route.product} products={productGroups} addQuote={addQuote} navigate={navigate} />}
         {route.name === "blogDetail" && <BlogDetail post={route.post} navigate={navigate} />}
         {route.name === "downloads" && <Downloads />}
         {route.name === "trace" && <Traceability />}
@@ -470,6 +471,53 @@ function normalizeApiProduct(product) {
     pdf: product.pdf || "#",
     cad: product.cad || "#"
   };
+}
+
+function groupProducts(list = []) {
+  const groups = new Map();
+
+  for (const product of list) {
+    const key = [product.category, product.name, product.connection].filter(Boolean).join("|") || product.slug;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(product);
+  }
+
+  return [...groups.values()].map((variants) => {
+    const sorted = [...variants].sort(compareProductsBySize);
+    const first = sorted[0];
+    const sizeSummary = summarizeValues(sorted.map((item) => item.size), 3);
+
+    return {
+      ...first,
+      id: `${sorted.length} 个规格`,
+      slug: first.slug,
+      variants: sorted,
+      size: sizeSummary,
+      material: summarizeValues(sorted.map((item) => item.material), 2),
+      pressure: summarizeValues(sorted.map((item) => item.pressure), 2),
+      connection: summarizeValues(sorted.map((item) => item.connection), 2),
+      description: `${first.name}，共 ${sorted.length} 个规格可选${sizeSummary ? `，覆盖 ${sizeSummary}` : ""}。`
+    };
+  });
+}
+
+function summarizeValues(values, limit = 3) {
+  const unique = [...new Set(values.filter(Boolean))];
+  if (!unique.length) return "";
+  if (unique.length <= limit) return unique.join(" / ");
+  return `${unique.slice(0, limit).join(" / ")} 等 ${unique.length} 项`;
+}
+
+function compareProductsBySize(a, b) {
+  const left = sizeSortValue(a.size);
+  const right = sizeSortValue(b.size);
+  if (left !== right) return left - right;
+  return String(a.id).localeCompare(String(b.id), "zh-Hans-CN", { numeric: true });
+}
+
+function sizeSortValue(size = "") {
+  const match = String(size).match(/DN\s*(\d+)/i) || String(size).match(/(\d+)/);
+  return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
 }
 
 function resolveRoute(path, productList = products) {
@@ -522,18 +570,44 @@ function buildTraceUrl(code = "") {
 
 function ProductImage({ product, className = "" }) {
   const [failed, setFailed] = useState(false);
+  const [src, setSrc] = useState(product?.image || fallbackProductImage(product));
 
-  if (!product?.image || failed) return null;
+  React.useEffect(() => {
+    setFailed(false);
+    setSrc(product?.image || fallbackProductImage(product));
+  }, [product?.image, product?.name]);
+
+  if (!src || failed) return null;
 
   return (
     <img
       className={className}
-      src={product.image}
+      src={src}
       alt={product.name}
       loading="eager"
-      onError={() => setFailed(true)}
+      onError={() => {
+        const fallback = fallbackProductImage(product);
+        if (fallback && src !== fallback) {
+          setSrc(fallback);
+        } else {
+          setFailed(true);
+        }
+      }}
     />
   );
+}
+
+function fallbackProductImage(product) {
+  if (!product) return "";
+  const text = `${product.name || ""} ${product.category || ""}`;
+  if (text.includes("法兰")) return "/images/generated/archetypes/flange.png";
+  if (text.includes("三通")) return "/images/generated/archetypes/tee.png";
+  if (text.includes("四通")) return "/images/generated/archetypes/cross.png";
+  if (text.includes("弯头")) return text.includes("45") ? "/images/generated/archetypes/elbow45.png" : "/images/generated/archetypes/elbow90.png";
+  if (text.includes("管帽")) return "/images/generated/archetypes/cap.png";
+  if (text.includes("管桥")) return "/images/generated/archetypes/bridge.png";
+  if (text.includes("管")) return "/images/generated/archetypes/pipe.png";
+  return "/images/generated/archetypes/coupling.png";
 }
 
 function Header({ active, navigate, quoteCount }) {
@@ -812,12 +886,15 @@ function Products({ products: productList, addQuote, navigate }) {
   const relatedPosts = getRelatedPosts(relatedTags, 3);
 
   const filtered = useMemo(() => productList.filter((product) => {
-    const matchKeyword = `${product.name}${product.id}${product.description}`.toLowerCase().includes(keyword.toLowerCase());
-    return (category === "全部" || product.category === category) &&
-      (material === "全部" || product.material === material) &&
-      (pressure === "全部" || product.pressure === pressure) &&
-      (connection === "全部" || product.connection === connection) &&
-      matchKeyword;
+    const variants = product.variants?.length ? product.variants : [product];
+    return variants.some((variant) => {
+      const matchKeyword = `${variant.name}${variant.id}${variant.size}${variant.description}`.toLowerCase().includes(keyword.toLowerCase());
+      return (category === "全部" || variant.category === category) &&
+        (material === "全部" || variant.material === material) &&
+        (pressure === "全部" || variant.pressure === pressure) &&
+        (connection === "全部" || variant.connection === connection) &&
+        matchKeyword;
+    });
   }), [productList, category, material, pressure, connection, keyword]);
 
   return (
@@ -905,7 +982,7 @@ function CatalogFilterList({ title, options, value, setValue }) {
 }
 
 function uniqueOptions(list, field) {
-  return [...new Set(list.map((item) => item[field]).filter(Boolean))];
+  return [...new Set(list.flatMap((item) => item.variants?.length ? item.variants : [item]).map((item) => item[field]).filter(Boolean))];
 }
 
 function CategoryStrip({ products: productList, categories: categoryOptions, active, setActive }) {
@@ -920,7 +997,7 @@ function CategoryStrip({ products: productList, categories: categoryOptions, act
           <button key={category} className={active === category ? "active" : ""} onClick={() => setActive(category)}>
             {product ? <ProductImage product={product} /> : null}
             <strong>{label}</strong>
-            <small>{count} 个产品</small>
+            <small>{count} 个型号</small>
           </button>
         );
       })}
@@ -929,6 +1006,9 @@ function CategoryStrip({ products: productList, categories: categoryOptions, act
 }
 
 function CatalogProductCard({ product, addQuote, navigate }) {
+  const variants = product.variants?.length ? product.variants : [product];
+  const firstVariant = variants[0];
+
   return (
     <article className="catalog-product-card">
       <button className="favorite-button" aria-label="收藏">♡</button>
@@ -937,7 +1017,7 @@ function CatalogProductCard({ product, addQuote, navigate }) {
       </Link>
       <div className="catalog-product-copy">
         <h3><Link href={`/products/${product.slug}/`} navigate={navigate}>{product.name}</Link></h3>
-        <span>{product.id}</span>
+        <span>{variants.length} 个规格 · 起始编码 {firstVariant.id}</span>
         <dl>
           <div><dt>材质：</dt><dd>{product.material}</dd></div>
           <div><dt>规格：</dt><dd>{product.size}</dd></div>
@@ -948,7 +1028,7 @@ function CatalogProductCard({ product, addQuote, navigate }) {
       <div className="catalog-product-actions">
         <Link href={`/products/${product.slug}/`} navigate={navigate}>查看详情</Link>
         <a href={product.cad}>下载CAD</a>
-        <button onClick={() => addQuote(product.slug)}>加入询价</button>
+        <button onClick={() => navigate(`/products/${product.slug}/`)}>选择规格</button>
       </div>
     </article>
   );
@@ -979,11 +1059,47 @@ function ProductCard({ product, addQuote, navigate }) {
 }
 
 function ProductDetail({ product, products: productList, addQuote, navigate }) {
+  const variants = product.variants?.length ? product.variants : [product];
+  const [selectedSlug, setSelectedSlug] = useState(variants[0]?.slug || product.slug);
+  const selectedProduct = variants.find((item) => item.slug === selectedSlug) || variants[0] || product;
   const related = productList.filter((item) => item.category === product.category && item.slug !== product.slug).slice(0, 3);
   const relatedPosts = getRelatedPosts([product.category, product.name, ...(categoryRelatedTags[product.category] || [])], 3);
+
+  React.useEffect(() => {
+    setSelectedSlug(variants[0]?.slug || product.slug);
+  }, [product.slug]);
+
   return (
     <>
-      <section className="detail-layout"><div className="detail-media"><ProductImage product={product} /></div><div className="detail-copy"><p className="eyebrow">{product.category} · {product.id}</p><h1>{product.name}</h1><p>{product.description}</p><section className="detail-panel"><h2>核心参数</h2><SpecTable product={product} /></section><div className="detail-actions"><button className="button large" onClick={() => addQuote(product.slug)}>加入询价单</button><Link className="button ghost large" href="/trace/" navigate={navigate}>追溯查询</Link><a className="button ghost large" href={product.pdf}>PDF 样本</a><a className="button ghost large" href={product.cad}>CAD 图纸</a></div></div></section>
+      <section className="detail-layout">
+        <div className="detail-media"><ProductImage product={product} /></div>
+        <div className="detail-copy">
+          <p className="eyebrow">{product.category} · {variants.length} 个规格</p>
+          <h1>{product.name}</h1>
+          <p>{product.description}</p>
+          <section className="detail-panel">
+            <h2>选择规格</h2>
+            <div className="variant-picker">
+              {variants.map((variant) => (
+                <button key={variant.slug} className={selectedProduct.slug === variant.slug ? "active" : ""} onClick={() => setSelectedSlug(variant.slug)}>
+                  <strong>{variant.size || "默认规格"}</strong>
+                  <span>{variant.id}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+          <section className="detail-panel">
+            <h2>核心参数</h2>
+            <SpecTable product={selectedProduct} />
+          </section>
+          <div className="detail-actions">
+            <button className="button large" onClick={() => addQuote(selectedProduct.slug)}>加入询价单</button>
+            <Link className="button ghost large" href="/trace/" navigate={navigate}>追溯查询</Link>
+            <a className="button ghost large" href={selectedProduct.pdf}>PDF 样本</a>
+            <a className="button ghost large" href={selectedProduct.cad}>CAD 图纸</a>
+          </div>
+        </div>
+      </section>
       <section className="section"><div className="section-head"><h2>相关技术文章</h2><Link href="/downloads/" navigate={navigate}>查看资料中心</Link></div><div className="detail-blog-grid">{relatedPosts.map((post) => <BlogCard key={post.title} post={post} navigate={navigate} />)}</div></section>
       <section className="section"><div className="section-head"><h2>相关产品</h2><Link href="/products/" navigate={navigate}>返回产品中心</Link></div><div className="product-grid">{related.map((item) => <ProductCard key={item.slug} product={item} addQuote={addQuote} navigate={navigate} />)}</div></section>
     </>
