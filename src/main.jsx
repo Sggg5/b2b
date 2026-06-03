@@ -391,6 +391,23 @@ function getQuote() {
 function App() {
   const [path, setPath] = useState(window.location.pathname);
   const [quote, setQuoteState] = useState(getQuote);
+  const [productList, setProductList] = useState(products);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    fetch("/api/products")
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        if (cancelled || !data?.products?.length) return;
+        setProductList(data.products.map(normalizeApiProduct));
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function navigate(href) {
     window.history.pushState(null, "", href);
@@ -418,16 +435,16 @@ function App() {
     setQuote(quote.filter((item) => item !== slug));
   }
 
-  const selectedProducts = quote.map((slug) => products.find((product) => product.slug === slug)).filter(Boolean);
-  const route = resolveRoute(path);
+  const selectedProducts = quote.map((slug) => productList.find((product) => product.slug === slug)).filter(Boolean);
+  const route = resolveRoute(path, productList);
 
   return (
     <>
       <Header active={route.active} navigate={navigate} quoteCount={quote.length} />
       <main>
         {route.name === "home" && <Home navigate={navigate} />}
-        {route.name === "products" && <Products addQuote={addQuote} navigate={navigate} />}
-        {route.name === "productDetail" && <ProductDetail product={route.product} addQuote={addQuote} navigate={navigate} />}
+        {route.name === "products" && <Products products={productList} addQuote={addQuote} navigate={navigate} />}
+        {route.name === "productDetail" && <ProductDetail product={route.product} products={productList} addQuote={addQuote} navigate={navigate} />}
         {route.name === "blogDetail" && <BlogDetail post={route.post} navigate={navigate} />}
         {route.name === "downloads" && <Downloads />}
         {route.name === "trace" && <Traceability />}
@@ -438,11 +455,28 @@ function App() {
   );
 }
 
-function resolveRoute(path) {
+function normalizeApiProduct(product) {
+  return {
+    ...product,
+    id: String(product.id || ""),
+    slug: String(product.slug || product.id || ""),
+    category: product.category || "其它",
+    material: product.material || "",
+    size: product.size || "",
+    pressure: product.pressure || "",
+    connection: product.connection || "",
+    description: product.description || `${product.name || "产品"}${product.size ? `，规格 ${product.size}` : ""}`,
+    image: product.image || "",
+    pdf: product.pdf || "#",
+    cad: product.cad || "#"
+  };
+}
+
+function resolveRoute(path, productList = products) {
   if (path === "/products" || path === "/products/") return { name: "products", active: "产品中心" };
   if (path.startsWith("/products/")) {
     const slug = path.split("/").filter(Boolean)[1];
-    const product = products.find((item) => item.slug === slug) || products[0];
+    const product = productList.find((item) => item.slug === slug) || productList[0] || products[0];
     return { name: "productDetail", active: "产品中心", product };
   }
   if (path.startsWith("/blog/")) {
@@ -763,24 +797,28 @@ function HomeBlock({ title, action, href, navigate, children }) {
   return <section className="home-block"><div className="home-block-head"><h2>{title}</h2><Link href={href} navigate={navigate}>{action}</Link></div>{children}</section>;
 }
 
-function Products({ addQuote, navigate }) {
+function Products({ products: productList, addQuote, navigate }) {
   const params = new URLSearchParams(window.location.search);
   const [category, setCategory] = useState(params.get("category") || "全部");
   const [material, setMaterial] = useState("全部");
   const [pressure, setPressure] = useState("全部");
   const [connection, setConnection] = useState("全部");
   const [keyword, setKeyword] = useState(params.get("q") || "");
+  const categoryOptions = useMemo(() => uniqueOptions(productList, "category"), [productList]);
+  const materialOptions = useMemo(() => uniqueOptions(productList, "material"), [productList]);
+  const pressureOptions = useMemo(() => uniqueOptions(productList, "pressure"), [productList]);
+  const connectionOptions = useMemo(() => uniqueOptions(productList, "connection"), [productList]);
   const relatedTags = category === "全部" ? ["不锈钢水管", "沟槽", "双卡", "单卡"] : (categoryRelatedTags[category] || [category]);
   const relatedPosts = getRelatedPosts(relatedTags, 3);
 
-  const filtered = useMemo(() => products.filter((product) => {
+  const filtered = useMemo(() => productList.filter((product) => {
     const matchKeyword = `${product.name}${product.id}${product.description}`.toLowerCase().includes(keyword.toLowerCase());
     return (category === "全部" || product.category === category) &&
       (material === "全部" || product.material === material) &&
       (pressure === "全部" || product.pressure === pressure) &&
       (connection === "全部" || product.connection === connection) &&
       matchKeyword;
-  }), [category, material, pressure, connection, keyword]);
+  }), [productList, category, material, pressure, connection, keyword]);
 
   return (
     <div className="catalog-page">
@@ -796,7 +834,7 @@ function Products({ addQuote, navigate }) {
           </div>
         </div>
         <div className="catalog-hero-media">
-          <ProductImage product={products.find((item) => item.slug === "grooved-tee") || products[0]} />
+          <ProductImage product={productList.find((item) => item.slug === "grooved-tee") || productList[0]} />
         </div>
       </section>
       <section className="catalog-layout-v2">
@@ -805,10 +843,10 @@ function Products({ addQuote, navigate }) {
             <h2>筛选条件</h2>
             <button onClick={() => { setCategory("全部"); setMaterial("全部"); setPressure("全部"); setConnection("全部"); setKeyword(""); }}>清空筛选</button>
           </div>
-          <CatalogFilterList title="分类" options={["全部", ...categories]} value={category} setValue={setCategory} />
-          <CatalogFilterList title="材质" options={["全部", ...materials]} value={material} setValue={setMaterial} />
-          <CatalogFilterList title="压力等级" options={["全部", ...pressures]} value={pressure} setValue={setPressure} />
-          <CatalogFilterList title="连接方式" options={["全部", ...connections]} value={connection} setValue={setConnection} />
+          <CatalogFilterList title="分类" options={["全部", ...categoryOptions]} value={category} setValue={setCategory} />
+          <CatalogFilterList title="材质" options={["全部", ...materialOptions]} value={material} setValue={setMaterial} />
+          <CatalogFilterList title="压力等级" options={["全部", ...pressureOptions]} value={pressure} setValue={setPressure} />
+          <CatalogFilterList title="连接方式" options={["全部", ...connectionOptions]} value={connection} setValue={setConnection} />
         </aside>
         <div className="catalog-results">
           <div className="catalog-search-row">
@@ -818,7 +856,7 @@ function Products({ addQuote, navigate }) {
             </label>
             <button>默认排序</button>
           </div>
-          <CategoryStrip active={category} setActive={setCategory} />
+          <CategoryStrip products={productList} categories={categoryOptions} active={category} setActive={setCategory} />
           <RelatedPostsPanel title={category === "全部" ? "相关技术文章" : `${categoryMeta[category]?.[0] || category} · 技术文章`} posts={relatedPosts} navigate={navigate} />
           <div className="catalog-card-grid">
             {filtered.map((product) => <CatalogProductCard key={product.slug} product={product} addQuote={addQuote} navigate={navigate} />)}
@@ -866,14 +904,18 @@ function CatalogFilterList({ title, options, value, setValue }) {
   );
 }
 
-function CategoryStrip({ active, setActive }) {
-  const items = ["全部", ...categories];
+function uniqueOptions(list, field) {
+  return [...new Set(list.map((item) => item[field]).filter(Boolean))];
+}
+
+function CategoryStrip({ products: productList, categories: categoryOptions, active, setActive }) {
+  const items = ["全部", ...categoryOptions];
   return (
     <div className="category-strip">
       {items.map((category) => {
-        const product = category === "全部" ? products[0] : products.find((item) => item.category === category);
+        const product = category === "全部" ? productList[0] : productList.find((item) => item.category === category);
         const label = category === "全部" ? "全部产品" : (categoryMeta[category]?.[0] || category);
-        const count = category === "全部" ? products.length : products.filter((item) => item.category === category).length;
+        const count = category === "全部" ? productList.length : productList.filter((item) => item.category === category).length;
         return (
           <button key={category} className={active === category ? "active" : ""} onClick={() => setActive(category)}>
             {product ? <ProductImage product={product} /> : null}
@@ -936,8 +978,8 @@ function ProductCard({ product, addQuote, navigate }) {
   return <article className="product-card"><Link className="product-image" href={`/products/${product.slug}/`} navigate={navigate}><ProductImage product={product} /></Link><div className="product-content"><div className="eyebrow">{product.category} · {product.id}</div><h3><Link href={`/products/${product.slug}/`} navigate={navigate}>{product.name}</Link></h3><p>{product.description}</p><SpecTable product={product} /><div className="card-actions"><Link className="button ghost" href={`/products/${product.slug}/`} navigate={navigate}>查看详情</Link><a className="button ghost" href={product.cad}>CAD</a><a className="button ghost" href={product.pdf}>PDF</a><button className="button" onClick={() => addQuote(product.slug)}>加入询价单</button></div></div></article>;
 }
 
-function ProductDetail({ product, addQuote, navigate }) {
-  const related = products.filter((item) => item.category === product.category && item.slug !== product.slug).slice(0, 3);
+function ProductDetail({ product, products: productList, addQuote, navigate }) {
+  const related = productList.filter((item) => item.category === product.category && item.slug !== product.slug).slice(0, 3);
   const relatedPosts = getRelatedPosts([product.category, product.name, ...(categoryRelatedTags[product.category] || [])], 3);
   return (
     <>
