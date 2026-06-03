@@ -1,3 +1,14 @@
 name = "b2b"
 pages_build_output_dir = "dist"
 compatibility_date = "2026-05-31"
+
+# Run `wrangler d1 create b2b-db`, then replace database_id.
+[[d1_databases]]
+binding = "DB"
+database_name = "b2b-db"
+database_id = "618d3e61-5336-4c10-ba01-71bda6432e1d"
+
+# Optional R2 binding for product images, PDFs, CAD files.
+# [[r2_buckets]]
+# binding = "PRODUCT_BUCKET"
+# bucket_name = "b2b-assets"

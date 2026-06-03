@@ -525,8 +525,8 @@ function Home({ navigate }) {
   const [aiLoading, setAiLoading] = useState(false);
   const [heroIndex, setHeroIndex] = useState(0);
   const [isHeroPaused, setIsHeroPaused] = useState(false);
+  const [randomPosts, setRandomPosts] = useState(() => pickRandomPosts(siteBlogPosts, 3));
   const activeHero = heroSlides[heroIndex];
-  const randomPosts = useMemo(() => pickRandomPosts(siteBlogPosts, 3), []);
 
   React.useEffect(() => {
     if (isHeroPaused) return undefined;
@@ -537,6 +537,25 @@ function Home({ navigate }) {
 
     return () => window.clearInterval(timer);
   }, [isHeroPaused]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    fetch("/api/blog-posts?random=true&limit=3")
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        if (cancelled || !data?.posts?.length) return;
+        setRandomPosts(data.posts.map((post) => ({
+          ...post,
+          product: productForTags(post.tags, post.title)
+        })));
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function submitAi(event) {
     event.preventDefault();
@@ -1073,7 +1092,73 @@ function DownloadColumn({ title, items, field }) {
 }
 
 function Quote({ selectedProducts, removeQuote, clearQuote }) {
-  return <><PageHead eyebrow="Quote" title="询价单" text="本页只收集询价意向，不接支付、不做会员系统。" /><section className="quote-layout"><div><div className="toolbar"><strong>已选产品</strong><button className="text-button" onClick={clearQuote}>清空</button></div><div className="quote-items">{selectedProducts.length ? selectedProducts.map((product) => <article className="quote-item" key={product.slug}><ProductImage product={product} /><div><strong>{product.name}</strong><span>{product.id} · {product.material} · {product.size}</span></div><button className="text-button" onClick={() => removeQuote(product.slug)}>移除</button></article>) : <p className="empty-panel">询价单为空，请先从产品中心加入产品。</p>}</div></div><form className="quote-form"><label>公司名称<input required placeholder="请输入公司名称" /></label><label>联系人<input required placeholder="请输入联系人" /></label><label>电话 / 邮箱<input required placeholder="手机号或邮箱" /></label><label>补充需求<textarea rows="5" placeholder="数量、工况、交期、收货地等" /></label><button className="button large full" type="button">提交询价</button><p className="form-note">静态演示，后续接入 Pages Functions 与 D1。</p></form></section></>;
+  const [form, setForm] = useState({ company: "", contact: "", phoneEmail: "", message: "" });
+  const [status, setStatus] = useState({ type: "idle", text: "" });
+
+  function updateForm(field, value) {
+    setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  async function submitQuote(event) {
+    event.preventDefault();
+    setStatus({ type: "loading", text: "正在提交..." });
+
+    try {
+      const response = await fetch("/api/quotes", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          products: selectedProducts.map(({ id, slug, name, material, size, pressure }) => ({ id, slug, name, material, size, pressure }))
+        })
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "提交失败，请稍后重试。");
+      }
+
+      setForm({ company: "", contact: "", phoneEmail: "", message: "" });
+      clearQuote();
+      setStatus({ type: "success", text: `提交成功，询价编号 #${data.id || ""}`.trim() });
+    } catch (error) {
+      setStatus({ type: "error", text: error.message || "提交失败，请稍后重试。" });
+    }
+  }
+
+  return (
+    <>
+      <PageHead eyebrow="Quote" title="询价单" text="本页只收集询价意向，不接支付、不做会员系统。" />
+      <section className="quote-layout">
+        <div>
+          <div className="toolbar">
+            <strong>已选产品</strong>
+            <button className="text-button" onClick={clearQuote}>清空</button>
+          </div>
+          <div className="quote-items">
+            {selectedProducts.length ? selectedProducts.map((product) => (
+              <article className="quote-item" key={product.slug}>
+                <ProductImage product={product} />
+                <div>
+                  <strong>{product.name}</strong>
+                  <span>{product.id} · {product.material} · {product.size}</span>
+                </div>
+                <button className="text-button" onClick={() => removeQuote(product.slug)}>移除</button>
+              </article>
+            )) : <p className="empty-panel">询价单为空，请先从产品中心加入产品。</p>}
+          </div>
+        </div>
+        <form className="quote-form" onSubmit={submitQuote}>
+          <label>公司名称<input required value={form.company} onChange={(event) => updateForm("company", event.target.value)} placeholder="请输入公司名称" /></label>
+          <label>联系人<input required value={form.contact} onChange={(event) => updateForm("contact", event.target.value)} placeholder="请输入联系人" /></label>
+          <label>电话 / 邮箱<input required value={form.phoneEmail} onChange={(event) => updateForm("phoneEmail", event.target.value)} placeholder="手机号或邮箱" /></label>
+          <label>补充需求<textarea rows="5" value={form.message} onChange={(event) => updateForm("message", event.target.value)} placeholder="数量、工况、交期、收货地等" /></label>
+          <button className="button large full" type="submit" disabled={status.type === "loading"}>{status.type === "loading" ? "提交中..." : "提交询价"}</button>
+          {status.text ? <p className={`form-note ${status.type}`}>{status.text}</p> : <p className="form-note">提交后将写入 Cloudflare D1 询价表。</p>}
+        </form>
+      </section>
+    </>
+  );
 }
 
 function PageHead({ eyebrow, title, text }) {

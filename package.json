@@ -5,13 +5,19 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "vite --host 127.0.0.1 --port 4173"
+    "dev": "vite --host 127.0.0.1 --port 4173",
+    "db:migrate:local": "wrangler d1 execute b2b-db --local --file=./migrations/0001_init.sql",
+    "db:migrate:remote": "wrangler d1 execute b2b-db --remote --file=./migrations/0001_init.sql",
+    "db:sync:local": "node ./tools/sync-d1-data.mjs --local",
+    "db:sync:remote": "node ./tools/sync-d1-data.mjs --remote"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^6.0.7",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "vite": "^6.0.7"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "wrangler": "^4.97.0"
+  }
 }

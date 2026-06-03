@@ -817,6 +817,14 @@ img {
   padding: 0;
 }
 
+.form-note.success {
+  color: var(--accent-dark);
+}
+
+.form-note.error {
+  color: var(--signal);
+}
+
 .section,
 .page-head {
   padding: 42px 0 24px;
